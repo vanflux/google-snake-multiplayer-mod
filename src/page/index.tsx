@@ -1,11 +1,9 @@
-// @ts-nocheck
-
 import { io } from "socket.io-client";
 import { detour, extractSubObject, findChildKeyInObject, findChildKeysInObject, findClassByMethod, transformObject } from "./utils";
 
 export async function pageLoadedEntry() {
     if (window.destroy) window.destroy();
-    const destroyFns = [];
+    const destroyFns: (()=>any)[] = [];
     window.destroy = () => {
         console.log('[GSM] Destroying...');
         destroyFns.forEach(fn => fn());
@@ -19,28 +17,24 @@ export async function pageLoadedEntry() {
     const Header = findClassByMethod(/.*/, 1, x => x.includes('images/icons/material'));
 
     let initialized = false;
-    let gameInstance;
-    let gameInstanceCtxKey;
-    let otherInstance = {};
-    let otherRenderer;
+    let gameInstance: any;
+    let gameInstanceCtxKey: string;
+    let otherInstance: any = {};
+    let otherRenderer: any;
     let lastDataSend = 0;
 
     // Variables used to know WHEN render other players without code patching
     // Google made something to serve a different code for groups of users and sometimes it randomly changes too :p (why? can you collaborate with me???)
     let canRenderOtherPlayers = false;
 
-    function createPlayerRenderer(instance, settings, ctx) {
-        return new PlayerRenderer(instance, settings, ctx);
-    };
+    function serializeGameInstance(gameInstance: any, renderPart: number) {
+        const isSimple = (x: any) => typeof x === 'boolean' || typeof x === 'number' || typeof x === 'string' || x.constructor.name === 'Object';
+        const isVector2 = (x: any) => x instanceof Vector2;
 
-    function serializeGameInstance(gameInstance) {
-        const isSimple = x => typeof x === 'boolean' || typeof x === 'number' || typeof x === 'string' || x.constructor.name === 'Object';
-        const isVector2 = x => x instanceof Vector2;
-
-        const typify = type => data => ({type, data});
-        const serializeSimple = x => typify('simple_object')(JSON.stringify(x));
-        const serializeVector = x => typify('vector2')({x: x.x, y: x.y});
-        const serializeVectorArray = x => typify('vector2_array')(x.map(serializeVector));
+        const typify = (type: string) => (data: any) => ({type, data});
+        const serializeSimple = (x: any) => typify('simple_object')(JSON.stringify(x));
+        const serializeVector = (x: any) => typify('vector2')({x: x.x, y: x.y});
+        const serializeVectorArray = (x: any) => typify('vector2_array')(x.map(serializeVector));
         
         //const simpleKeys = [...simpleValueKeys, ...simpleArrayKeys, ...vectorKeys, ...vectorArrayKeys];
         //const aux1 = new Set(simpleKeys);
@@ -71,31 +65,24 @@ export async function pageLoadedEntry() {
                 ...(extractSubObject(gameInstance[gameInstanceCtxKey], oaVectorKeys, serializeVector)),
                 ...(extractSubObject(gameInstance[gameInstanceCtxKey], oaVectorArrayKeys, serializeVectorArray)),
             }),
-            ticks: serializeSimple(gameInstance.ticks),
+            renderPart: serializeSimple(renderPart),
         };
     };
 
-    function deserializeOnInstance(serializedData, gameInstance, outInstance) {
-        const deserialize = x => transformObject(x, x => {
+    function deserializeOnInstance(serializedData: any, gameInstance: any, outInstance: any) {
+        const deserialize = (x: any): any => transformObject(x, x => {
             if (x.type === 'object') return deserialize(x.data);
             if (x.type === 'simple_object') return JSON.parse(x.data);
             if (x.type === 'vector2') return new Vector2(x.data.x, x.data.y);
-            if (x.type === 'vector2_array') return x.data.map(x => new Vector2(x.data.x, x.data.y));
+            if (x.type === 'vector2_array') return x.data.map((x: any) => new Vector2(x.data.x, x.data.y));
             throw new Error('Unsupported deserialization!');
         });
         const data = deserialize(serializedData);
 
         for (const key in data) {
-            if (key === 'settings' || key === gameInstanceCtxKey) {
+            if (typeof outInstance[key] === 'object') {
                 for (const subKey in gameInstance[key]) {
-                    if (key === 'settings') {
-                        outInstance[key][subKey] = data[key][subKey] ?? outInstance[key][subKey];
-                    } else {
-                        outInstance[key][subKey] = data[key][subKey] ?? outInstance[key][subKey] ?? gameInstance[key][subKey];
-                        if (subKey === 'oa') outInstance[key][subKey] = outInstance.ka;
-                        outInstance.ka.settings = outInstance.settings;
-                    }
-                    if (subKey === 'settings') outInstance[key][subKey] = outInstance.settings;
+                    outInstance[key][subKey] = data[key][subKey] ?? outInstance[key][subKey] ?? gameInstance[key][subKey];
                 }
             } else {
                 outInstance[key] = data[key] ?? outInstance[key];
@@ -103,8 +90,9 @@ export async function pageLoadedEntry() {
         }
     };
 
+    // For testing purposes
     function runInLoop() {
-        const mapping = {
+        const mapping: any = {
             NONE: 'RIGHT',
             RIGHT: 'DOWN',
             DOWN: 'LEFT',
@@ -112,8 +100,10 @@ export async function pageLoadedEntry() {
             UP: 'RIGHT',
         };
         const id = setInterval(() => {
+            if ((window as any).dontLoop) return;
             gameInstance[gameInstanceCtxKey].direction = mapping[gameInstance[gameInstanceCtxKey].direction];
-        }, 570);
+            [...document.querySelectorAll('div > h2')].find(x => x.textContent === 'Play')?.parentElement?.click();
+        }, Math.random() * 50 + 500);
         return () => clearInterval(id);
     }
 
@@ -129,7 +119,7 @@ export async function pageLoadedEntry() {
         });
         destroyFns.push(() => socket.close());
 
-        const revertOnGameRenderDetour = detour(GameRenderer.prototype, 'render', function (...args) {
+        const revertOnGameRenderDetour = detour(GameRenderer.prototype, 'render', function (renderPart) {
             canRenderOtherPlayers = true;
             
             const gameInstanceKey = findChildKeyInObject(this, x => x.ticks !== undefined && x.settings !== undefined && x.menu !== undefined);
@@ -141,7 +131,7 @@ export async function pageLoadedEntry() {
                 initialized = true;
                 console.log('[GSM] GameInstance:', gameInstance);
                 destroyFns.push(runInLoop());
-                otherRenderer = createPlayerRenderer(otherInstance, this.settings, this[gameInstanceCtxKey]);
+                otherRenderer = new PlayerRenderer(otherInstance, this.settings, this[gameInstanceCtxKey]);
                 const n = () => document.createElement('div');
                 const c = () => document.createElement('canvas');
                 const settings = new Settings(n());
@@ -149,34 +139,6 @@ export async function pageLoadedEntry() {
                 const header = new Header(settings, n(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n());
                 
                 const aux = {
-                    /*settings: gameInstance.settings,
-                    menu: gameInstance.menu,
-                    header: gameInstance.header,
-                    Xa: gameInstance.Xa,
-                    ticks: gameInstance.ticks,
-                    Sa: gameInstance.Sa,
-                    Ug: gameInstance.Ug,
-                    Qa: gameInstance.Qa,
-                    zk: gameInstance.zk,
-                    Bb: gameInstance.Bb,
-                    kb: gameInstance.kb,
-                    zc: gameInstance.zc,
-                    uc: gameInstance.uc,
-                    Ib: gameInstance.Ib,
-                    Pb: gameInstance.Pb,
-                    Eb: gameInstance.Eb,
-                    Mb: gameInstance.Mb,
-                    La: gameInstance.La,
-                    ka: gameInstance.ka,
-                    Oa: gameInstance.Oa,
-                    oa: gameInstance.oa,
-                    wa: gameInstance.wa,
-                    Da: gameInstance.Da,
-                    Ma: gameInstance.Ma,
-                    Aa: gameInstance.Aa,
-                    Ba: gameInstance.Ba,
-                    Ga: gameInstance.Ga,
-                    Ra: gameInstance.Ra,*/
                     ...gameInstance,
                     settings,
                     menu,
@@ -187,8 +149,8 @@ export async function pageLoadedEntry() {
                 console.log('[GSM] OtherInstance:', otherInstance);
             }
 
-            if (lastDataSend === undefined || Date.now() - lastDataSend > 20) {
-                const serializedData = serializeGameInstance(gameInstance);
+            if (lastDataSend === undefined || Date.now() - lastDataSend > 25) {
+                const serializedData = serializeGameInstance(gameInstance, renderPart);
                 socket.emit('data', serializedData);
                 lastDataSend = Date.now();
             }
@@ -199,7 +161,7 @@ export async function pageLoadedEntry() {
                 canRenderOtherPlayers = false;
                 
                 try {
-                    if (otherRenderer && otherInstance) otherRenderer.render(a, b, c);
+                    if (otherRenderer && otherInstance) otherRenderer.render(otherInstance.renderPart, b, c);
                 } catch (exc) {
                     console.error('Something went wrong on other render', exc);
                 }

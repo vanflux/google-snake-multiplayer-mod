@@ -65,12 +65,12 @@ export function extractSubObject(obj: any, keys: string[], transform: (...args: 
 export function detour(
   obj: any,
   fnKey: string,
-  detourFn: (...args: any) => void
+  detourFn: (this: any, ...args: any) => any
 ) {
   const original = obj[fnKey];
   obj[fnKey] = function (...args: any) {
     try {
-      detourFn.call(this, ...args);
+      if (detourFn.call(this, ...args)) return;
     } catch(exc) {
       console.error('Detour error', fnKey, exc);
     }
