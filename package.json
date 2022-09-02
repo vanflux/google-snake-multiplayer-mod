@@ -1,0 +1,19 @@
+{
+	"name": "google-snake-multiplayer-mod",
+	"version": "1.0.0",
+	"description": "Project generated with VFE.",
+	"scripts": {
+		"server": "ts-node-dev --respawn src/server/index.ts",
+		"start": "vfe start",
+		"build": "vfe build"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"socket.io": "^4.5.1",
+		"socket.io-client": "^4.5.1",
+		"ts-node-dev": "^2.0.0",
+		"vf-ext-framework": "github:vanflux/vf-ext-framework"
+	}
+}
