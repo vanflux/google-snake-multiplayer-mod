@@ -1,17 +1,26 @@
 // @ts-nocheck
 
+import { io } from "socket.io-client";
 import { detour, extractSubObject, findChildKeyInObject, findChildKeysInObject, findClassByMethod, transformObject } from "./utils";
 
 export async function pageLoadedEntry() {
     if (window.destroy) window.destroy();
+    const destroyFns = [];
+    window.destroy = () => {
+        console.log('[GSM] Destroying...');
+        destroyFns.forEach(fn => fn());
+    };
 
     const Vector2 = findClassByMethod('clone', 0, x => x.includes('(this.x,this.y)'));
     const GameRenderer = findClassByMethod('render', 2, x => x.includes('this.context.fillRect(0,0,this.context.canvas.width,this.context.canvas.height);'));
     const PlayerRenderer = findClassByMethod('render', 3, x => x.includes('RIGHT') && x.includes('DOWN'))
 
     let initialized = false;
+    let gameInstance;
+    let gameInstanceKey1;
     let otherInstance = {};
     let otherRenderer;
+    let lastDataSend = 0;
 
     function createPlayerRenderer(instance, settings, ctx) {
         return new PlayerRenderer(instance, settings, ctx);
@@ -26,27 +35,35 @@ export async function pageLoadedEntry() {
         
         const isSimple = x => typeof x === 'boolean' || typeof x === 'number' || typeof x === 'string' || x.constructor.name === 'Object';
         const isVector2 = x => x instanceof Vector2;
-        const simpleValueKeys = findChildKeysInObject(gameInstance.oa, isSimple);
-        const simpleArrayKeys = findChildKeysInObject(gameInstance.oa, x => Array.isArray(x) && isSimple(x[0]));
-        const vectorKeys = findChildKeysInObject(gameInstance.oa, isVector2);
-        const vectorArrayKeys = findChildKeysInObject(gameInstance.oa, x => Array.isArray(x) && isVector2(x[0]));
-        
-        //const simpleKeys = [...simpleValueKeys, ...simpleArrayKeys, ...vectorKeys, ...vectorArrayKeys];
-        //const aux1 = new Set(simpleKeys);
-        //const aux2 = Object.keys(gameInstance.oa).filter(x => !aux1.has(x));
-        //console.log('Not handled keys:', aux2.join(', '));
 
         const typify = type => data => ({type, data});
         const serializeSimple = x => typify('simple_object')(JSON.stringify(x));
         const serializeVector = x => typify('vector2')({x: x.x, y: x.y});
         const serializeVectorArray = x => typify('vector2_array')(x.map(serializeVector));
+        
+        //const simpleKeys = [...simpleValueKeys, ...simpleArrayKeys, ...vectorKeys, ...vectorArrayKeys];
+        //const aux1 = new Set(simpleKeys);
+        //const aux2 = Object.keys(gameInstance.oa).filter(x => !aux1.has(x));
+        //console.log('Not handled keys:', aux2.join(', '));
+        
+        const oaSimpleValueKeys = findChildKeysInObject(gameInstance.oa, isSimple);
+        const oaSimpleArrayKeys = findChildKeysInObject(gameInstance.oa, x => Array.isArray(x) && isSimple(x[0]));
+        const oaVectorKeys = findChildKeysInObject(gameInstance.oa, isVector2);
+        const oaVectorArrayKeys = findChildKeysInObject(gameInstance.oa, x => Array.isArray(x) && isVector2(x[0]));
+        
+        const settingsSimpleValueKeys = findChildKeysInObject(gameInstance.settings, isSimple);
+        const settingsSimpleArrayKeys = findChildKeysInObject(gameInstance.settings, x => Array.isArray(x) && isSimple(x[0]));
 
         return {
+            settings: typify('object')({
+                ...(extractSubObject(gameInstance.settings, settingsSimpleValueKeys, serializeSimple)),
+                ...(extractSubObject(gameInstance.settings, settingsSimpleArrayKeys, serializeSimple)),
+            }),
             oa: typify('object')({
-                ...(extractSubObject(gameInstance.oa, simpleValueKeys, serializeSimple)),
-                ...(extractSubObject(gameInstance.oa, simpleArrayKeys, serializeSimple)),
-                ...(extractSubObject(gameInstance.oa, vectorKeys, serializeVector)),
-                ...(extractSubObject(gameInstance.oa, vectorArrayKeys, serializeVectorArray)),
+                ...(extractSubObject(gameInstance.oa, oaSimpleValueKeys, serializeSimple)),
+                ...(extractSubObject(gameInstance.oa, oaSimpleArrayKeys, serializeSimple)),
+                ...(extractSubObject(gameInstance.oa, oaVectorKeys, serializeVector)),
+                ...(extractSubObject(gameInstance.oa, oaVectorArrayKeys, serializeVectorArray)),
             }),
             ticks: serializeSimple(gameInstance.ticks),
         };
@@ -62,15 +79,13 @@ export async function pageLoadedEntry() {
         });
         const data = deserialize(serializedData);
 
-        Object.assign(outInstance, gameInstance);
-        const importantDataKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
         for (const key in data) {
-            if (key === importantDataKey) {
-                for (const key in gameInstance[importantDataKey]) {
-                    outInstance[importantDataKey][key] = data[importantDataKey][key] || gameInstance[importantDataKey][key];
+            if (key === 'settings' || key === gameInstanceKey1) {
+                for (const subKey in gameInstance[key]) {
+                    outInstance[key][subKey] = data[key][subKey] || gameInstance[key][subKey];
                 }
             } else {
-                outInstance[key] = data[key] || gameInstance[key];
+                outInstance[key] = data[key] || outInstance[key] || gameInstance[key];
             }
         }
     };
@@ -78,32 +93,55 @@ export async function pageLoadedEntry() {
     function main() {
         console.log('[GSM] Starting...');
         
+        const socket = io('ws://localhost:3000', { secure: false, transports: ['websocket'] });
+        socket.on('connect', () => {
+            console.log('[GSM] Connected to the server!');
+        });
+        socket.on('other', (serializedData) => {
+            console.log('Other data received!');
+            deserializeOnInstance(serializedData, gameInstance, otherInstance);
+        });
+        destroyFns.push(() => socket.close());
+
         const revertGameRenderPath = patchGameRender(); // TODO: Dynamically patch that method body
 
         const revertOnGameRenderDetour = detour(GameRenderer.prototype, 'render', function (...args) {
             const gameInstanceKey = findChildKeyInObject(this, x => x.ticks !== undefined && x.settings !== undefined && x.menu !== undefined);
-            const gameInstance = this[gameInstanceKey];
-            
+            gameInstance = this[gameInstanceKey];
+            gameInstanceKey1 = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
+
             if (!initialized) {
                 console.log('[GSM] Game render hook initization started successfully');
                 init(gameInstance, this.settings, this.oa);
                 initialized = true;
-                Object.assign(otherInstance, gameInstance);
+                console.log('[GSM] GameInstance:', gameInstance);
+                const n = () => document.createElement('div');
+                const c = () => document.createElement('canvas');
+                const settings = new s_Vte(n());
+                const menu = new s_2H(settings, n(), n(), c(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n());
+                const header = new s_Nue(settings, n(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n());
+                //Object.assign(otherInstance, {...gameInstance}, {oa: new s_fte(settings)});
+                
+                
+                Object.assign(otherInstance, {...gameInstance}, {settings, menu, header}, {oa:{...gameInstance.oa}});
+                console.log('[GSM] OtherInstance:', otherInstance);
             }
 
-            const serializedData = serializeGameInstance(gameInstance);
+            if (lastDataSend === undefined || Date.now() - lastDataSend > 20) {
+                const serializedData = serializeGameInstance(gameInstance);
+                socket.emit('data', serializedData);
+                lastDataSend = Date.now();
+            }
+
             //console.log('serializedData', serializedData);
-            deserializeOnInstance(serializedData, gameInstance, otherInstance);
+            //deserializeOnInstance(serializedData, gameInstance, otherInstance);
         });
 
         //const revertOnPlayerRenderDetour = detour(s_ate.prototype, 'render', function (...args) {});
 
-        window.destroy = () => {
-            console.log('[GSM] Destroying...');
-            revertOnGameRenderDetour();
-            //revertOnPlayerRenderDetour();
-            revertGameRenderPath();
-        };
+        destroyFns.push(revertOnGameRenderDetour);
+        //destroyFns.push(revertOnPlayerRenderDetour);
+        destroyFns.push(revertGameRenderPath);
     }
 
     main();
@@ -404,7 +442,7 @@ export async function pageLoadedEntry() {
             s_QH(this.settings, 4) && (this.oa.save(), this.oa.translate(2 * this.ka.ka.oa, 2 * this.ka.ka.oa), this.kb.render(a));
             
 
-            //this.Ga.render(a, b, s_Tte(this));
+            this.Ga.render(a, b, s_Tte(this));
             try {
                 if (otherRenderer && otherInstance) otherRenderer.render(a, b, s_Tte(this));
             } catch (exc) {

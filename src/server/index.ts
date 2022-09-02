@@ -7,9 +7,14 @@ export const server = new Server({
 });
 
 server.on('connection', (socket) => {
+    console.log('Client connected!');
     socket.on('data', (data) => {
-        console.log('Repassing...', Math.random());
+        //console.log('Repassing...', Math.random());
         socket.broadcast.emit('other', data);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected!');
     });
 });
 
