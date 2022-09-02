@@ -13,7 +13,10 @@ export async function pageLoadedEntry() {
 
     const Vector2 = findClassByMethod('clone', 0, x => x.includes('(this.x,this.y)'));
     const GameRenderer = findClassByMethod('render', 2, x => x.includes('this.context.fillRect(0,0,this.context.canvas.width,this.context.canvas.height);'));
-    const PlayerRenderer = findClassByMethod('render', 3, x => x.includes('RIGHT') && x.includes('DOWN'))
+    const PlayerRenderer = findClassByMethod('render', 3, x => x.includes('RIGHT') && x.includes('DOWN'));
+    const Settings = findClassByMethod('toString', 0, x => x.includes('v=10,color='));
+    const Menu = findClassByMethod('update', 0, x => x.includes('this.isVisible()') && x.includes('settings'));
+    const Header = findClassByMethod('jga', 1, x => x.includes('images/icons/material'));
 
     let initialized = false;
     let gameInstance;
@@ -31,8 +34,6 @@ export async function pageLoadedEntry() {
     };
 
     function serializeGameInstance(gameInstance) {
-        //console.log('[GSM] Serialize', gameInstance.oa);
-        
         const isSimple = x => typeof x === 'boolean' || typeof x === 'number' || typeof x === 'string' || x.constructor.name === 'Object';
         const isVector2 = x => x instanceof Vector2;
 
@@ -43,13 +44,13 @@ export async function pageLoadedEntry() {
         
         //const simpleKeys = [...simpleValueKeys, ...simpleArrayKeys, ...vectorKeys, ...vectorArrayKeys];
         //const aux1 = new Set(simpleKeys);
-        //const aux2 = Object.keys(gameInstance.oa).filter(x => !aux1.has(x));
+        //const aux2 = Object.keys(gameInstance[gameInstanceKey1]).filter(x => !aux1.has(x));
         //console.log('Not handled keys:', aux2.join(', '));
         
-        const oaSimpleValueKeys = findChildKeysInObject(gameInstance.oa, isSimple);
-        const oaSimpleArrayKeys = findChildKeysInObject(gameInstance.oa, x => Array.isArray(x) && isSimple(x[0]));
-        const oaVectorKeys = findChildKeysInObject(gameInstance.oa, isVector2);
-        const oaVectorArrayKeys = findChildKeysInObject(gameInstance.oa, x => Array.isArray(x) && isVector2(x[0]));
+        const oaSimpleValueKeys = findChildKeysInObject(gameInstance[gameInstanceKey1], isSimple);
+        const oaSimpleArrayKeys = findChildKeysInObject(gameInstance[gameInstanceKey1], x => Array.isArray(x) && isSimple(x[0]));
+        const oaVectorKeys = findChildKeysInObject(gameInstance[gameInstanceKey1], isVector2);
+        const oaVectorArrayKeys = findChildKeysInObject(gameInstance[gameInstanceKey1], x => Array.isArray(x) && isVector2(x[0]));
         
         const settingsSimpleValueKeys = findChildKeysInObject(gameInstance.settings, isSimple);
         const settingsSimpleArrayKeys = findChildKeysInObject(gameInstance.settings, x => Array.isArray(x) && isSimple(x[0]));
@@ -59,11 +60,11 @@ export async function pageLoadedEntry() {
                 ...(extractSubObject(gameInstance.settings, settingsSimpleValueKeys, serializeSimple)),
                 ...(extractSubObject(gameInstance.settings, settingsSimpleArrayKeys, serializeSimple)),
             }),
-            oa: typify('object')({
-                ...(extractSubObject(gameInstance.oa, oaSimpleValueKeys, serializeSimple)),
-                ...(extractSubObject(gameInstance.oa, oaSimpleArrayKeys, serializeSimple)),
-                ...(extractSubObject(gameInstance.oa, oaVectorKeys, serializeVector)),
-                ...(extractSubObject(gameInstance.oa, oaVectorArrayKeys, serializeVectorArray)),
+            [gameInstanceKey1]: typify('object')({
+                ...(extractSubObject(gameInstance[gameInstanceKey1], oaSimpleValueKeys, serializeSimple)),
+                ...(extractSubObject(gameInstance[gameInstanceKey1], oaSimpleArrayKeys, serializeSimple)),
+                ...(extractSubObject(gameInstance[gameInstanceKey1], oaVectorKeys, serializeVector)),
+                ...(extractSubObject(gameInstance[gameInstanceKey1], oaVectorArrayKeys, serializeVectorArray)),
             }),
             ticks: serializeSimple(gameInstance.ticks),
         };
@@ -112,18 +113,18 @@ export async function pageLoadedEntry() {
 
             if (!initialized) {
                 console.log('[GSM] Game render hook initization started successfully');
-                init(gameInstance, this.settings, this.oa);
+                init(gameInstance, this.settings, this[gameInstanceKey1]);
                 initialized = true;
                 console.log('[GSM] GameInstance:', gameInstance);
                 const n = () => document.createElement('div');
                 const c = () => document.createElement('canvas');
-                const settings = new s_Vte(n());
-                const menu = new s_2H(settings, n(), n(), c(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n());
-                const header = new s_Nue(settings, n(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n());
+                const settings = new Settings(n());
+                const menu = new Menu(settings, n(), n(), c(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n());
+                const header = new Header(settings, n(), n(), n(), n(), n(), n(), n(), n(), n(), n(), n());
                 //Object.assign(otherInstance, {...gameInstance}, {oa: new s_fte(settings)});
                 
                 
-                Object.assign(otherInstance, {...gameInstance}, {settings, menu, header}, {oa:{...gameInstance.oa}});
+                Object.assign(otherInstance, {...gameInstance}, {settings, menu, header}, {[gameInstanceKey1]:{...gameInstance[gameInstanceKey1]}});
                 console.log('[GSM] OtherInstance:', otherInstance);
             }
 
