@@ -9,6 +9,7 @@
     "strict": true,
     "noImplicitAny": true,
     "skipLibCheck": true,
+    "allowJs": false,
     "typeRoots": [
       "./node_modules/@types",
       "./src/typings"
