@@ -6,35 +6,102 @@ export async function pageLoadedEntry() {
     if (window.destroy) window.destroy();
 
     let initialized = false;
+    let otherInstance = {};
     let otherRenderer;
 
-    const init = (instance, settings, ctx) => {
-        otherRenderer = createPlayerRenderer(instance, settings, ctx);
-    };
-
-    const createPlayerRenderer = (instance, settings, ctx) => {
+    function createPlayerRenderer(instance, settings, ctx) {
         return new s_ate(instance, settings, ctx);
     };
 
-    const destroyOnGameRender = detour(s_gte.prototype, 'render', function (...args) {
-        if (!initialized) {
-            init(this.ka, this.settings, this.oa);
-            initialized = true;
-        }
-
-        const gameInstance = this.ka;
-        console.log('gameInstance', gameInstance);
-        //console.log('onGameRender');
-    });
-
-    const destroyOnPlayerRender = detour(s_ate.prototype, 'render', function (...args) {
-        //console.log('onPlayerRender');
-    });
-
-    window.destroy = () => {
-        destroyOnPlayerRender();
-        destroyOnGameRender();
+    function init(instance, settings, ctx) {
+        otherRenderer = createPlayerRenderer(otherInstance, settings, ctx);
     };
+
+    function serializeGameInstance(gameInstance) {
+        return {
+            /*Da: {
+                wa: {
+                    get: gameInstance.Da.wa.get,
+                },
+            },*/
+            La: gameInstance.La,
+            Ma: {
+                oa: gameInstance.Ma.oa,
+            },
+            Tg: gameInstance.Tg,
+            ka: {
+                //g9: gameInstance.ka.g9,
+                ka: {
+                    height: gameInstance.ka.ka.height,
+                    width: gameInstance.ka.ka.width,
+                },
+                oa: gameInstance.ka.oa,
+                wa: gameInstance.ka.wa.map(x => x.map(y => y)),
+            },
+            oa: {
+                Da: gameInstance.oa.Da,
+                Ga: gameInstance.oa.Ga,
+                La: gameInstance.oa.La.map(x => ({...x})),
+                Ma: gameInstance.oa.Ma,
+                Mc: {
+                    x: gameInstance.oa.Mc.x,
+                    y: gameInstance.oa.Mc.y,
+                },
+                Ra: [...gameInstance.oa.Ra],
+                Sa: gameInstance.oa.Sa,
+                Xa: gameInstance.oa.Xa,
+                direction: gameInstance.oa.direction,
+                he: gameInstance.oa.he,
+                ka: gameInstance.oa.ka.map(x => new s_0g(x.x, x.y)),
+                kb: new s_0g(gameInstance.oa.kb.x, gameInstance.oa.kb.y),
+                kd: new s_0g(gameInstance.oa.kd.x, gameInstance.oa.kd.y),
+                wa: gameInstance.oa.wa.map(x => x),
+                yn: new s_0g(gameInstance.oa.yn.x, gameInstance.oa.yn.y),
+            },
+            ticks: gameInstance.ticks,
+            wk: gameInstance.wk,
+        };
+    };
+
+    function deserializeOnInstance(serializedData, gameInstance, outInstance) {
+        for (const key in serializedData) {
+            if (key === 'oa') {
+                for (const key in serializedData.oa) {
+                    outInstance.oa[key] = serializedData.oa[key] || gameInstance.oa[key];
+                }
+            } else {
+                outInstance[key] = serializedData[key] || gameInstance[key];
+            }
+        }
+    };
+
+    function main() {
+        const revertGameRenderPath = patchGameRender();
+
+        const revertOnGameRenderDetour = detour(s_gte.prototype, 'render', function (...args) {
+            const gameInstance = this.ka;
+
+            if (!initialized) {
+                init(this.ka, this.settings, this.oa);
+                initialized = true;
+                Object.assign(otherInstance, gameInstance);
+            }
+
+            const serializedData = serializeGameInstance(gameInstance);
+            //console.log('serializedData', serializedData);
+            deserializeOnInstance(serializedData, gameInstance, otherInstance);
+        });
+
+        const revertOnPlayerRenderDetour = detour(s_ate.prototype, 'render', function (...args) {});
+
+        window.destroy = () => {
+            revertOnGameRenderDetour();
+            revertOnPlayerRenderDetour();
+            revertGameRenderPath();
+        };
+    }
+
+    main();
     
     
     
@@ -319,118 +386,129 @@ export async function pageLoadedEntry() {
         s_TH(this.settings, 4) && (this.ka.oa.yn = f);
         s_TH(this.settings, 7) && s_bte(this, new s_0g(this.ka.ka.ka.width * this.ka.ka.oa - f.x, this.ka.ka.ka.height * this.ka.ka.oa - f.y), d, !1, !0);
         s_bte(this, f, d)
-    }
-
-    s_gte.prototype.render = function(a, b) {
-        this.ka.wk && this.ka.kb && (a = 0);
-        this.oa.clearRect(0, 0, this.oa.canvas.width, this.oa.canvas.height);
-        this.wa.clearRect(0, 0, this.wa.canvas.width, this.wa.canvas.height);
-        this.context.fillStyle = s_ZH(this.settings, this.settings.ka, 3);
-        this.context.fillRect(0, 0, this.context.canvas.width, this.context.canvas.height);
-        s_TH(this.settings, 4) && (this.oa.save(), this.oa.translate(2 * this.ka.ka.oa, 2 * this.ka.ka.oa), this.kb.render(a));
-        this.Ga.render(a, b, s_hte(this));
-        b = s_d(this.ka.wa.ka);
-        for (var c = b.next(); !c.done; c = b.next()) this.Sa.render(a, c.value);
-        this.Bb.render(a);
-        b = this.Da;
-        c = a;
-        for (var d = s_d(b.ka.Aa.oa), e = d.next(); !e.done; e = d.next()) {
-            var f = b,
-                g = c;
-            e = e.value;
-            var k = e.Ib.clone();
-            if (e.prev) {
-                var h = e.prev.clone();
-                k.x = k.x * g + h.x * (1 - g);
-                k.y = k.y * g + h.y * (1 - g)
-            }
-            k.x = k.x * f.ka.ka.oa + f.ka.ka.oa / 2;
-            k.y = k.y * f.ka.ka.oa + f.ka.ka.oa / 2;
-            h = f.ka.ka.oa * (e.bp && !f.ka.wk ? g : 1);
-            s_TH(f.settings, 11) && (f.wa.globalAlpha = s_UH(f.ka, g, e.Jh, 0 === (e.Ib.x + e.Ib.y) % 2 ? .365 : .265));
-            s_Mse(f, e, h, k);
-            if (s_TH(f.settings, 4) && null !== e.prev) {
-                g =
-                    f.ka.ka.oa * f.ka.ka.ka.width;
-                var l = f.ka.ka.oa * f.ka.ka.ka.height;
-                0 === e.Ib.x && 0 > e.prev.x ? s_Mse(f, e, h, new s_0g(k.x + g, k.y)) : e.Ib.x === f.ka.ka.ka.width - 1 && e.prev.x > f.ka.ka.ka.width - 1 && s_Mse(f, e, h, new s_0g(k.x - g, k.y));
-                0 === e.Ib.y && 0 > e.prev.y ? s_Mse(f, e, h, new s_0g(k.x, k.y + l)) : e.Ib.y === f.ka.ka.ka.height - 1 && e.prev.y > f.ka.ka.ka.height - 1 && s_Mse(f, e, h, new s_0g(k.x, k.y - l))
-            }
-            f.wa.globalAlpha = 1
-        }
-        s_TH(this.settings, 4) || s_ite(this);
-        b = this.Ma;
-        c = a;
-        d = s_d(b.ka.Ga.oa);
-        for (e = d.next(); !e.done; e = d.next()) f = b, k = c, g = e.value, e = new s_0g(g.Ib.x *
-            f.ka.ka.oa, g.Ib.y * f.ka.ka.oa), s_TH(f.settings, 11) && (f.wa.globalAlpha = s_UH(f.ka, k, g.Jh, .3)), k = Math.min(f.Aa.wa - 1, Math.floor((g.Wx + k) / 2 * f.Aa.wa)), g = f.ka.ka.oa / f.Aa.zd(), f.Aa.render(k, e, null, 0, g), f.wa.globalAlpha = 1;
-        d = s_d(b.ka.Ga.Aa);
-        for (e = d.next(); !e.done; e = d.next()) f = b, e = e.value, f.wa.globalAlpha = (e.ticks - c) / 3 * .8, f.wa.fillStyle = e.color, k = 3 * f.ka.ka.oa, f.wa.fillRect(e.Ib.x - k / 2, e.Ib.y - k / 2, k, k), f.wa.globalAlpha = 1;
-        !s_TH(this.settings, 4) && s_TH(this.settings, 12) && s_6se(this.Ma, a);
-        !s_TH(this.settings, 4) && s_TH(this.settings,
-            9) && s_Pse(this.Da);
-        s_TH(this.settings, 4) || this.kb.render(a);
-        this.Oa.render(a);
-        this.Xa.render(a);
-        s_TH(this.settings, 13);
-        b = this.Ga;
-        c = s_hte(this);
-        0 < b.ka.oa.uc && (d = b.ka.ka.oa / 30, f = Math.floor((6 - b.ka.oa.uc + a) / 6 * b.Ga.wa) % b.Ga.wa, e = new s_0g(b.ka.oa.Bb.x * b.ka.ka.oa + b.ka.ka.oa / 2, b.ka.oa.Bb.y * b.ka.ka.oa + b.ka.ka.oa / 2), k = new s_0g(-b.Ga.zd(), -b.Ga.ud() / 2), b.Ga.render(f, e, k, b.ka.oa.Pb, d), s_TH(b.settings, 7) && b.Ga.render(f, new s_0g(c.width - e.x, c.height - e.y), k, b.ka.oa.Pb + Math.PI, d));
-        this.Eb.render();
-        f = e = 0;
-        1 < this.ka.oa.Ga &&
-            (e = 8 * Math.random() - 4, f = 8 * Math.random() - 4);
-        if (s_TH(this.settings, 4)) {
-            b = e;
-            c = f;
-            d = this.Qa;
-            d.context.fillStyle = s_ZH(d.settings, d.settings.ka, 0);
-            d.context.fillRect(0, 0, d.context.canvas.width, d.context.canvas.height);
-            d.context.fillStyle = s_ZH(d.settings, d.settings.ka, 1);
-            f = new s_0g(d.context.canvas.width / 2 % d.ka.ka.oa, d.context.canvas.height / 2 % d.ka.ka.oa);
-            e = !1;
-            0 !== a || d.ka.wk || "LEFT" !== d.ka.oa.direction && "UP" !== d.ka.oa.direction ? !d.ka.Eb || "RIGHT" !== d.ka.oa.direction && "DOWN" !== d.ka.oa.direction || (e = !0) : e = !0;
-            k = new s_0g(d.ka.oa.yn.x % d.ka.ka.oa, d.ka.oa.yn.y % d.ka.ka.oa);
-            for (g = -1; g < d.ka.ka.ka.width + 3; g++)
-                for (h = -1; h < d.ka.ka.ka.height + 3; h++) Math.abs((g + h) % 2) !== (d.ka.ka.Da + (e ? 1 : 0)) % 2 && d.context.fillRect(g * d.ka.ka.oa - k.x + f.x, h * d.ka.ka.oa - k.y + f.y, d.ka.ka.oa, d.ka.ka.oa);
-            this.oa.restore();
-            this.Aa.clearRect(0, 0, this.Aa.canvas.width, this.Aa.canvas.height);
-            this.Aa.drawImage(this.oa.canvas, 0, 0);
-            this.oa.clearRect(0, 0, this.oa.canvas.width, this.oa.canvas.height);
-            d = Math.round(this.oa.canvas.width / 2 - this.ka.oa.yn.x - 2 * this.ka.ka.oa);
-            f = Math.round(this.oa.canvas.height / 2 - this.ka.oa.yn.y - 2 * this.ka.ka.oa);
-            e = 2 * this.ka.ka.oa;
-            k = d >= -e;
-            g = d <= e;
-            h = f <= e;
-            l = this.ka.ka.ka.width * this.ka.ka.oa;
-            var m = this.ka.ka.ka.height * this.ka.ka.oa;
-            f >= -e && (k && this.oa.drawImage(this.Aa.canvas, d - l, f - m), g && this.oa.drawImage(this.Aa.canvas, d + l, f - m), this.oa.drawImage(this.Aa.canvas, d, f - m));
-            k && this.oa.drawImage(this.Aa.canvas, d - l, f);
-            g && this.oa.drawImage(this.Aa.canvas, d + l, f);
-            h && (k && this.oa.drawImage(this.Aa.canvas, d - l, f + m), g && this.oa.drawImage(this.Aa.canvas, d + l,
-                f + m), this.oa.drawImage(this.Aa.canvas, d, f + m));
-            this.oa.drawImage(this.Aa.canvas, d, f);
-            s_ite(this);
-            s_TH(this.settings, 9) && (this.wa.save(), this.wa.translate(d + 2 * this.ka.ka.oa, f + 2 * this.ka.ka.oa), s_Pse(this.Da), this.wa.restore());
-            s_TH(this.settings, 12) && (this.wa.save(), this.wa.translate(d + 2 * this.ka.ka.oa, f + 2 * this.ka.ka.oa), s_6se(this.Ma, a), this.wa.restore());
-            a = (this.oa.canvas.width - this.context.canvas.width) / 2;
-            d = (this.oa.canvas.height - this.context.canvas.height) / 2;
-            this.context.drawImage(this.wa.canvas,
-                b - a, c - d);
-            this.context.drawImage(this.oa.canvas, b - a, c - d)
-        } else {
-            b = Math.round((this.context.canvas.width - this.Ba.canvas.width) / 2);
-            c = Math.round((this.context.canvas.height - this.Ba.canvas.height) / 2);
-            this.Ba.drawImage(this.La.canvas, e, f);
-            this.Ba.drawImage(this.wa.canvas, e, f);
-            this.Ba.drawImage(this.oa.canvas, e, f);
-            if (s_TH(this.settings, 9))
-                for (d = this.Da, f = new s_0g(b + e, c + f), e = s_d(d.ka.Aa.oa), k = e.next(); !k.done; k = e.next())
-                    if (k = k.value, g = null !== k.prev || d.ka.La ? a : 1, k.Jh && (0 === k.Ib.x ? s_Nse(d, new s_0g(-1, k.Ib.y),
-                            f, g) : k.Ib.x === d.ka.ka.ka.width - 1 && s_Nse(d, new s_0g(d.ka.ka.ka.width, k.Ib.y), f, g), 0 === k.Ib.y ? s_Nse(d, new s_0g(k.Ib.x, -1), f, g) : k.Ib.y === d.ka.ka.ka.height - 1 && s_Nse(d, new s_0g(k.Ib.x, d.ka.ka.ka.height), f, g)), null !== k.prev || !k.Jh && d.ka.La) k = null !== k.prev ? k.prev : k.Ib, 0 === k.x ? s_Nse(d, new s_0g(-1, k.y), f, 1 - a) : k.x === d.ka.ka.ka.width - 1 && s_Nse(d, new s_0g(d.ka.ka.ka.width, k.y), f, 1 - a), 0 === k.y ? s_Nse(d, new s_0g(k.x, -1), f, 1 - a) : k.y === d.ka.ka.ka.height - 1 && s_Nse(d, new s_0g(k.x, d.ka.ka.ka.height), f, 1 - a);
-            this.context.drawImage(this.Ba.canvas,
-                b, c)
-        }
     }*/
+
+    function patchGameRender() {
+        const original = s_gte.prototype.render;
+        s_gte.prototype.render = function(a, b) {
+            this.ka.wk && this.ka.kb && (a = 0);
+            this.oa.clearRect(0, 0, this.oa.canvas.width, this.oa.canvas.height);
+            this.wa.clearRect(0, 0, this.wa.canvas.width, this.wa.canvas.height);
+            this.context.fillStyle = s_ZH(this.settings, this.settings.ka, 3);
+            this.context.fillRect(0, 0, this.context.canvas.width, this.context.canvas.height);
+            s_TH(this.settings, 4) && (this.oa.save(), this.oa.translate(2 * this.ka.ka.oa, 2 * this.ka.ka.oa), this.kb.render(a));
+            //this.Ga.render(a, b, s_hte(this));
+
+            try {
+                if (otherRenderer && otherInstance) otherRenderer.render(a, b, s_hte(this));
+            } catch (exc) {
+                console.error('Something went wrong on other render', exc);
+            }
+
+            b = s_d(this.ka.wa.ka);
+            for (var c = b.next(); !c.done; c = b.next()) this.Sa.render(a, c.value);
+            this.Bb.render(a);
+            b = this.Da;
+            c = a;
+            for (var d = s_d(b.ka.Aa.oa), e = d.next(); !e.done; e = d.next()) {
+                var f = b,
+                    g = c;
+                e = e.value;
+                var k = e.Ib.clone();
+                if (e.prev) {
+                    var h = e.prev.clone();
+                    k.x = k.x * g + h.x * (1 - g);
+                    k.y = k.y * g + h.y * (1 - g)
+                }
+                k.x = k.x * f.ka.ka.oa + f.ka.ka.oa / 2;
+                k.y = k.y * f.ka.ka.oa + f.ka.ka.oa / 2;
+                h = f.ka.ka.oa * (e.bp && !f.ka.wk ? g : 1);
+                s_TH(f.settings, 11) && (f.wa.globalAlpha = s_UH(f.ka, g, e.Jh, 0 === (e.Ib.x + e.Ib.y) % 2 ? .365 : .265));
+                s_Mse(f, e, h, k);
+                if (s_TH(f.settings, 4) && null !== e.prev) {
+                    g =
+                        f.ka.ka.oa * f.ka.ka.ka.width;
+                    var l = f.ka.ka.oa * f.ka.ka.ka.height;
+                    0 === e.Ib.x && 0 > e.prev.x ? s_Mse(f, e, h, new s_0g(k.x + g, k.y)) : e.Ib.x === f.ka.ka.ka.width - 1 && e.prev.x > f.ka.ka.ka.width - 1 && s_Mse(f, e, h, new s_0g(k.x - g, k.y));
+                    0 === e.Ib.y && 0 > e.prev.y ? s_Mse(f, e, h, new s_0g(k.x, k.y + l)) : e.Ib.y === f.ka.ka.ka.height - 1 && e.prev.y > f.ka.ka.ka.height - 1 && s_Mse(f, e, h, new s_0g(k.x, k.y - l))
+                }
+                f.wa.globalAlpha = 1
+            }
+            s_TH(this.settings, 4) || s_ite(this);
+            b = this.Ma;
+            c = a;
+            d = s_d(b.ka.Ga.oa);
+            for (e = d.next(); !e.done; e = d.next()) f = b, k = c, g = e.value, e = new s_0g(g.Ib.x *
+                f.ka.ka.oa, g.Ib.y * f.ka.ka.oa), s_TH(f.settings, 11) && (f.wa.globalAlpha = s_UH(f.ka, k, g.Jh, .3)), k = Math.min(f.Aa.wa - 1, Math.floor((g.Wx + k) / 2 * f.Aa.wa)), g = f.ka.ka.oa / f.Aa.zd(), f.Aa.render(k, e, null, 0, g), f.wa.globalAlpha = 1;
+            d = s_d(b.ka.Ga.Aa);
+            for (e = d.next(); !e.done; e = d.next()) f = b, e = e.value, f.wa.globalAlpha = (e.ticks - c) / 3 * .8, f.wa.fillStyle = e.color, k = 3 * f.ka.ka.oa, f.wa.fillRect(e.Ib.x - k / 2, e.Ib.y - k / 2, k, k), f.wa.globalAlpha = 1;
+            !s_TH(this.settings, 4) && s_TH(this.settings, 12) && s_6se(this.Ma, a);
+            !s_TH(this.settings, 4) && s_TH(this.settings,
+                9) && s_Pse(this.Da);
+            s_TH(this.settings, 4) || this.kb.render(a);
+            this.Oa.render(a);
+            this.Xa.render(a);
+            s_TH(this.settings, 13);
+            b = this.Ga;
+            c = s_hte(this);
+            0 < b.ka.oa.uc && (d = b.ka.ka.oa / 30, f = Math.floor((6 - b.ka.oa.uc + a) / 6 * b.Ga.wa) % b.Ga.wa, e = new s_0g(b.ka.oa.Bb.x * b.ka.ka.oa + b.ka.ka.oa / 2, b.ka.oa.Bb.y * b.ka.ka.oa + b.ka.ka.oa / 2), k = new s_0g(-b.Ga.zd(), -b.Ga.ud() / 2), b.Ga.render(f, e, k, b.ka.oa.Pb, d), s_TH(b.settings, 7) && b.Ga.render(f, new s_0g(c.width - e.x, c.height - e.y), k, b.ka.oa.Pb + Math.PI, d));
+            this.Eb.render();
+            f = e = 0;
+            1 < this.ka.oa.Ga &&
+                (e = 8 * Math.random() - 4, f = 8 * Math.random() - 4);
+            if (s_TH(this.settings, 4)) {
+                b = e;
+                c = f;
+                d = this.Qa;
+                d.context.fillStyle = s_ZH(d.settings, d.settings.ka, 0);
+                d.context.fillRect(0, 0, d.context.canvas.width, d.context.canvas.height);
+                d.context.fillStyle = s_ZH(d.settings, d.settings.ka, 1);
+                f = new s_0g(d.context.canvas.width / 2 % d.ka.ka.oa, d.context.canvas.height / 2 % d.ka.ka.oa);
+                e = !1;
+                0 !== a || d.ka.wk || "LEFT" !== d.ka.oa.direction && "UP" !== d.ka.oa.direction ? !d.ka.Eb || "RIGHT" !== d.ka.oa.direction && "DOWN" !== d.ka.oa.direction || (e = !0) : e = !0;
+                k = new s_0g(d.ka.oa.yn.x % d.ka.ka.oa, d.ka.oa.yn.y % d.ka.ka.oa);
+                for (g = -1; g < d.ka.ka.ka.width + 3; g++)
+                    for (h = -1; h < d.ka.ka.ka.height + 3; h++) Math.abs((g + h) % 2) !== (d.ka.ka.Da + (e ? 1 : 0)) % 2 && d.context.fillRect(g * d.ka.ka.oa - k.x + f.x, h * d.ka.ka.oa - k.y + f.y, d.ka.ka.oa, d.ka.ka.oa);
+                this.oa.restore();
+                this.Aa.clearRect(0, 0, this.Aa.canvas.width, this.Aa.canvas.height);
+                this.Aa.drawImage(this.oa.canvas, 0, 0);
+                this.oa.clearRect(0, 0, this.oa.canvas.width, this.oa.canvas.height);
+                d = Math.round(this.oa.canvas.width / 2 - this.ka.oa.yn.x - 2 * this.ka.ka.oa);
+                f = Math.round(this.oa.canvas.height / 2 - this.ka.oa.yn.y - 2 * this.ka.ka.oa);
+                e = 2 * this.ka.ka.oa;
+                k = d >= -e;
+                g = d <= e;
+                h = f <= e;
+                l = this.ka.ka.ka.width * this.ka.ka.oa;
+                var m = this.ka.ka.ka.height * this.ka.ka.oa;
+                f >= -e && (k && this.oa.drawImage(this.Aa.canvas, d - l, f - m), g && this.oa.drawImage(this.Aa.canvas, d + l, f - m), this.oa.drawImage(this.Aa.canvas, d, f - m));
+                k && this.oa.drawImage(this.Aa.canvas, d - l, f);
+                g && this.oa.drawImage(this.Aa.canvas, d + l, f);
+                h && (k && this.oa.drawImage(this.Aa.canvas, d - l, f + m), g && this.oa.drawImage(this.Aa.canvas, d + l,
+                    f + m), this.oa.drawImage(this.Aa.canvas, d, f + m));
+                this.oa.drawImage(this.Aa.canvas, d, f);
+                s_ite(this);
+                s_TH(this.settings, 9) && (this.wa.save(), this.wa.translate(d + 2 * this.ka.ka.oa, f + 2 * this.ka.ka.oa), s_Pse(this.Da), this.wa.restore());
+                s_TH(this.settings, 12) && (this.wa.save(), this.wa.translate(d + 2 * this.ka.ka.oa, f + 2 * this.ka.ka.oa), s_6se(this.Ma, a), this.wa.restore());
+                a = (this.oa.canvas.width - this.context.canvas.width) / 2;
+                d = (this.oa.canvas.height - this.context.canvas.height) / 2;
+                this.context.drawImage(this.wa.canvas,
+                    b - a, c - d);
+                this.context.drawImage(this.oa.canvas, b - a, c - d)
+            } else {
+                b = Math.round((this.context.canvas.width - this.Ba.canvas.width) / 2);
+                c = Math.round((this.context.canvas.height - this.Ba.canvas.height) / 2);
+                this.Ba.drawImage(this.La.canvas, e, f);
+                this.Ba.drawImage(this.wa.canvas, e, f);
+                this.Ba.drawImage(this.oa.canvas, e, f);
+                if (s_TH(this.settings, 9))
+                    for (d = this.Da, f = new s_0g(b + e, c + f), e = s_d(d.ka.Aa.oa), k = e.next(); !k.done; k = e.next())
+                        if (k = k.value, g = null !== k.prev || d.ka.La ? a : 1, k.Jh && (0 === k.Ib.x ? s_Nse(d, new s_0g(-1, k.Ib.y),
+                                f, g) : k.Ib.x === d.ka.ka.ka.width - 1 && s_Nse(d, new s_0g(d.ka.ka.ka.width, k.Ib.y), f, g), 0 === k.Ib.y ? s_Nse(d, new s_0g(k.Ib.x, -1), f, g) : k.Ib.y === d.ka.ka.ka.height - 1 && s_Nse(d, new s_0g(k.Ib.x, d.ka.ka.ka.height), f, g)), null !== k.prev || !k.Jh && d.ka.La) k = null !== k.prev ? k.prev : k.Ib, 0 === k.x ? s_Nse(d, new s_0g(-1, k.y), f, 1 - a) : k.x === d.ka.ka.ka.width - 1 && s_Nse(d, new s_0g(d.ka.ka.ka.width, k.y), f, 1 - a), 0 === k.y ? s_Nse(d, new s_0g(k.x, -1), f, 1 - a) : k.y === d.ka.ka.ka.height - 1 && s_Nse(d, new s_0g(k.x, d.ka.ka.ka.height), f, 1 - a);
+                this.context.drawImage(this.Ba.canvas,
+                    b, c)
+            }
+        }
+        return () => s_gte.prototype.render = original;
+    }
 }
