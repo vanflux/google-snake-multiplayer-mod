@@ -8,7 +8,7 @@ export const server = new Server({
 
 server.on('connection', (socket) => {
     socket.on('data', (data) => {
-        console.log('Repassing...');
+        console.log('Repassing...', Math.random());
         socket.broadcast.emit('other', data);
     });
 });
