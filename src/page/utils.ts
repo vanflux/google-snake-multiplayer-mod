@@ -1,5 +1,5 @@
 export function findClassByMethod(
-  name: string,
+  name: string | RegExp,
   paramCount: number,
   fn: (body: string) => boolean
 ): any {
@@ -8,7 +8,7 @@ export function findClassByMethod(
       try {
         return Object.entries<any>(v.prototype)
           .filter(([sK, sV]) => {
-            return sK === name && sV.length === paramCount && fn(sV.toString());
+            return sK.match(name) && sV.length === paramCount && fn(sV.toString());
           })
           .map((x) => window[k as any]);
       } catch {}
