@@ -5,14 +5,30 @@ import { detour } from "./detour";
 export async function pageLoadedEntry() {
     if (window.destroy) window.destroy();
 
-    const destroyOnPlayerRender = detour(s_gte.prototype, 'render', function (...args) {
-        //console.log('onPlayerRender');
-    });
+    let initialized = false;
+    let otherRenderer;
 
-    const destroyOnGameRender = detour(s_ate.prototype, 'render', function (...args) {
+    const init = (instance, settings, ctx) => {
+        otherRenderer = createPlayerRenderer(instance, settings, ctx);
+    };
+
+    const createPlayerRenderer = (instance, settings, ctx) => {
+        return new s_ate(instance, settings, ctx);
+    };
+
+    const destroyOnGameRender = detour(s_gte.prototype, 'render', function (...args) {
+        if (!initialized) {
+            init(this.ka, this.settings, this.oa);
+            initialized = true;
+        }
+
         const gameInstance = this.ka;
         console.log('gameInstance', gameInstance);
         //console.log('onGameRender');
+    });
+
+    const destroyOnPlayerRender = detour(s_ate.prototype, 'render', function (...args) {
+        //console.log('onPlayerRender');
     });
 
     window.destroy = () => {
