@@ -22,6 +22,8 @@ export async function pageLoadedEntry() {
     let otherInstance: any = {};
     let otherRenderer: any;
     let lastDataSend = 0;
+    let lastOtherData: any;
+    let hasProcessedOtherData = false;
 
     // Variables used to know WHEN render other players without code patching
     // Google made something to serve a different code for groups of users and sometimes it randomly changes too :p (why? can you collaborate with me???)
@@ -36,12 +38,7 @@ export async function pageLoadedEntry() {
         const serializeVector = (x: any) => typify('vector2')({x: x.x, y: x.y});
         const serializeVectorArray = (x: any) => typify('vector2_array')(x.map(serializeVector));
         
-        //const simpleKeys = [...simpleValueKeys, ...simpleArrayKeys, ...vectorKeys, ...vectorArrayKeys];
-        //const aux1 = new Set(simpleKeys);
-        //const aux2 = Object.keys(gameInstance[gameInstanceKey1]).filter(x => !aux1.has(x));
-        //console.log('Not handled keys:', aux2.join(', '));
-        
-        const childSimpleValueKeys = findChildKeysInObject(gameInstance, isSimple); // FIXME: "zk" variable (false when live, true when death) -> snake flickering
+        const childSimpleValueKeys = findChildKeysInObject(gameInstance, isSimple);
         const childSimpleArrayKeys = findChildKeysInObject(gameInstance, x => Array.isArray(x) && isSimple(x[0]));
 
         const oaSimpleValueKeys = findChildKeysInObject(gameInstance[gameInstanceCtxKey], isSimple);
@@ -69,25 +66,14 @@ export async function pageLoadedEntry() {
         };
     };
 
-    function deserializeOnInstance(serializedData: any, gameInstance: any, outInstance: any) {
-        const deserialize = (x: any): any => transformObject(x, x => {
-            if (x.type === 'object') return deserialize(x.data);
+    function deserializeGameInstance(serializedData: any): any {
+        return transformObject(serializedData, x => {
+            if (x.type === 'object') return deserializeGameInstance(x.data);
             if (x.type === 'simple_object') return JSON.parse(x.data);
             if (x.type === 'vector2') return new Vector2(x.data.x, x.data.y);
             if (x.type === 'vector2_array') return x.data.map((x: any) => new Vector2(x.data.x, x.data.y));
             throw new Error('Unsupported deserialization!');
         });
-        const data = deserialize(serializedData);
-
-        for (const key in data) {
-            if (typeof outInstance[key] === 'object') {
-                for (const subKey in gameInstance[key]) {
-                    outInstance[key][subKey] = data[key][subKey] ?? outInstance[key][subKey] ?? gameInstance[key][subKey];
-                }
-            } else {
-                outInstance[key] = data[key] ?? outInstance[key];
-            }
-        }
     };
 
     // For testing purposes
@@ -115,21 +101,22 @@ export async function pageLoadedEntry() {
             console.log('[GSM] Connected to the server!');
         });
         socket.on('other', (serializedData) => {
-            deserializeOnInstance(serializedData, gameInstance, otherInstance);
+            lastOtherData = deserializeGameInstance(serializedData);
         });
         destroyFns.push(() => socket.close());
 
         const revertOnGameRenderDetour = detour(GameRenderer.prototype, 'render', function (renderPart) {
             canRenderOtherPlayers = true;
-            
-            const gameInstanceKey = findChildKeyInObject(this, x => x.ticks !== undefined && x.settings !== undefined && x.menu !== undefined);
-            gameInstance = this[gameInstanceKey];
-            gameInstanceCtxKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
 
             if (!initialized) {
-                console.log('[GSM] Game render hook initization started successfully');
                 initialized = true;
+                console.log('[GSM] Game render hook initization started successfully');
+                    
+                const gameInstanceKey = findChildKeyInObject(this, x => x.ticks !== undefined && x.settings !== undefined && x.menu !== undefined);
+                gameInstance = this[gameInstanceKey];
+                gameInstanceCtxKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
                 console.log('[GSM] GameInstance:', gameInstance);
+
                 destroyFns.push(runInLoop());
                 otherRenderer = new PlayerRenderer(otherInstance, this.settings, this[gameInstanceCtxKey]);
                 const n = () => document.createElement('div');
@@ -149,7 +136,7 @@ export async function pageLoadedEntry() {
                 console.log('[GSM] OtherInstance:', otherInstance);
             }
 
-            if (lastDataSend === undefined || Date.now() - lastDataSend > 25) {
+            if (lastDataSend === undefined || Date.now() - lastDataSend > 20) {
                 const serializedData = serializeGameInstance(gameInstance, renderPart);
                 socket.emit('data', serializedData);
                 lastDataSend = Date.now();
@@ -161,7 +148,22 @@ export async function pageLoadedEntry() {
                 canRenderOtherPlayers = false;
                 
                 try {
-                    if (otherRenderer && otherInstance) otherRenderer.render(otherInstance.renderPart, b, c);
+                    if (lastOtherData) {
+                        const data = lastOtherData;
+                        lastOtherData = undefined;
+                        hasProcessedOtherData = true;
+
+                        for (const key in data) {
+                            if (typeof otherInstance[key] === 'object' && !Array.isArray(otherInstance[key])) {
+                                for (const subKey in gameInstance[key]) {
+                                    otherInstance[key][subKey] = data[key][subKey] ?? otherInstance[key][subKey] ?? gameInstance[key][subKey];
+                                }
+                            } else {
+                                otherInstance[key] = data[key] ?? otherInstance[key];
+                            }
+                        }
+                    }
+                    hasProcessedOtherData && otherRenderer.render(otherInstance.renderPart, true, c);
                 } catch (exc) {
                     console.error('Something went wrong on other render', exc);
                 }
