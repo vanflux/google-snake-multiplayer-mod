@@ -7,14 +7,18 @@ export const server = new Server({
 });
 
 server.on('connection', (socket) => {
-    console.log('Client connected!');
+    console.log('Client connected:', socket.id);
+    
+    [...server.sockets.sockets.values()].map(s => s.id).filter(id => socket.id !== id).forEach(id => socket.emit('other_connect', {id}));
+    socket.broadcast.emit('other_connect', {id: socket.id});
+
     socket.on('data', (data) => {
-        //console.log('Repassing...', Math.random());
-        socket.broadcast.emit('other', data);
+        socket.broadcast.emit('other_data', {id: socket.id, data});
     });
 
     socket.on('disconnect', () => {
-        console.log('Client disconnected!');
+        socket.broadcast.emit('other_disconnect', {id: socket.id});
+        console.log('Client disconnected:', socket.id);
     });
 });
 

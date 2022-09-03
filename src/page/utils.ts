@@ -50,18 +50,6 @@ export function findChildKeysInObject(obj: any, fn: (child: any) => boolean) {
   return res.map(x => x[0]);
 }
 
-export function transformObject(obj: any, transform: (...args: any) => any = x=>x) {
-  const newObj: any = {};
-  for (const key in obj) newObj[key] = transform(obj[key]);
-  return newObj;
-}
-
-export function extractSubObject(obj: any, keys: string[], transform: (...args: any) => any = x=>x) {
-  const newObj: any = {};
-  for (const key of keys) newObj[key] = transform(obj[key]);
-  return newObj;
-}
-
 export function detour(
   obj: any,
   fnKey: string,
@@ -78,3 +66,17 @@ export function detour(
   };
   return () => (obj[fnKey] = original);
 }
+
+export function transformObject(obj: any, transform: (...args: any) => any = x=>x) {
+  const newObj: any = {};
+  for (const key in obj) newObj[key] = transform(obj[key]);
+  return newObj;
+}
+
+export function extractSubObject(obj: any, keys: string[], transform: (...args: any) => any = x=>x) {
+  const newObj: any = {};
+  for (const key of keys) newObj[key] = transform(obj[key]);
+  return newObj;
+}
+
+export type Class = { new(...args: any[]): any; };
