@@ -1,4 +1,4 @@
-import { gameInstance, gameInstanceCtxKey, Header, lastGameRenderCtx, Menu, PlayerRenderer, Settings } from "./hooks/game-hook";
+import { gameInstance, gameInstanceCtxKey, Header, lastGameRenderCtx, Menu, PlayerRenderer, Settings, SnakeBodyConfig, Vector2 } from "./hooks/game-hook";
 
 export function createOtherGameInstance() {
   const otherInstance: any = {};
@@ -25,15 +25,49 @@ export function createOtherGameInstance() {
 }
 
 export function updateOtherGameInstance(otherInstance: any, data: any) {
-  for (const key in data) {
-    if (typeof otherInstance[key] === 'object' && !Array.isArray(otherInstance[key])) {
-      for (const subKey in gameInstance[key]) {
-        otherInstance[key][subKey] = data[key][subKey] ?? otherInstance[key][subKey] ?? gameInstance[key][subKey];
-      }
+  deepUpdateObject(otherInstance, data, gameInstance);
+}
+
+export function deepUpdateObject(dest: any, src: any, fallback: any, already = new Set<any>()) {
+  if (typeof src === 'object') {
+    if (src == null) {
+      return src;
     } else {
-      otherInstance[key] = data[key] ?? otherInstance[key];
+      if (already.has(src)) return dest;
+      already.add(src);
+
+      if (dest instanceof Vector2 || src instanceof Vector2 || fallback instanceof Vector2) {
+        if (dest) {
+          dest.x = src.x;
+          dest.y = src.y;
+        } else {
+          dest = new Vector2(src.x, src.y);
+        }
+      } else if (dest instanceof SnakeBodyConfig || fallback instanceof SnakeBodyConfig) {
+        for (const key in fallback) {
+          dest[key] = deepUpdateObject(dest[key], src[key], fallback?.[key], already);
+        }
+      } else if (dest instanceof Settings ||fallback instanceof Settings) {
+        for (const key in fallback) {
+          dest[key] = deepUpdateObject(dest[key], src[key], fallback?.[key], already);
+        }
+      } else if (Array.isArray(src)) {
+        if (dest == null) dest = [];
+        dest.length = src.length;
+        for (let i = 0; i < src.length; i++) {
+          dest[i] = deepUpdateObject(dest[i], src[i], fallback?.[i], already);
+        }
+      } else {
+        if (dest == null) dest = {};
+        for (const key in src) {
+          dest[key] = deepUpdateObject(dest[key], src[key], fallback?.[key], already);
+        }
+      }
+      return dest;
     }
   }
+  if (typeof src === 'function') return dest;
+  return src ?? dest ?? fallback;
 }
 
 export function renderOtherGameInstance(otherRenderer: any, otherInstance: any, resolution: any) {

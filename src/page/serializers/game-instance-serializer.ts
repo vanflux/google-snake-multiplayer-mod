@@ -1,4 +1,4 @@
-import { gameInstance, gameInstanceCtxKey, Vector2 } from "../hooks/game-hook";
+import { gameInstance, gameInstanceCtxKey, gameInstanceMapObjectHolderKey, Vector2 } from "../hooks/game-hook";
 import { extractSubObject, findChildKeysInObject, transformObject } from "../utils";
 
 export function serializeGameInstance(renderPart: number) {
@@ -33,6 +33,11 @@ export function serializeGameInstance(renderPart: number) {
       ...(extractSubObject(gameInstance[gameInstanceCtxKey], oaSimpleArrayKeys, serializeSimple)),
       ...(extractSubObject(gameInstance[gameInstanceCtxKey], oaVectorKeys, serializeVector)),
       ...(extractSubObject(gameInstance[gameInstanceCtxKey], oaVectorArrayKeys, serializeVectorArray)),
+    }),
+    [gameInstanceMapObjectHolderKey]: typify('object')({
+      //...(extractSubObject(gameInstance[gameInstanceMapObjectHolderKey], [gameInstanceMapObjectHolderObjsKey], serializeSimple)),
+      // @ts-ignore
+      //...(extractSubObject(gameInstance[gameInstanceMapObjectHolderKey], [gameInstanceMapObjectHolderObjsKey], serializeSimple)),
     }),
     renderPart: serializeSimple(renderPart),
   };

@@ -7,10 +7,14 @@ export let PlayerRenderer: Class;
 export let Settings: Class;
 export let Menu: Class
 export let Header: Class;
+export let MapObjectHolder: Class;
+export let SnakeBodyConfig: Class;
 
 export let gameInstance: any;
 export let gameInstanceCtx: any;
 export let gameInstanceCtxKey: any;
+export let gameInstanceMapObjectHolderKey: any;
+export let gameInstanceMapObjectHolderObjsKey: any;
 export let lastGameRenderCtx: any;
 
 let onGameInitialize: (gameRenderCtx: any, gameRenderArgs: any)=>any;
@@ -31,6 +35,8 @@ export function setupGame() {
   Settings = findClassByMethod('toString', 0, x => x.includes('v=10,color='));
   Menu = findClassByMethod('update', 0, x => x.includes('this.isVisible()') && x.includes('settings'));
   Header = findClassByMethod(/.*/, 1, x => x.includes('images/icons/material'));
+  MapObjectHolder = findClassByMethod('shuffle', 1, () => true);
+  SnakeBodyConfig = findClassByMethod('reset', 0, x => x.includes('"RIGHT"') && x.includes('this.direction') && x.includes('.push(new'));
 
   const revertOnGameRenderDetour = detour(GameRenderer.prototype, 'render', function (...args: any) {
     gameRenderStarted = true;
@@ -44,6 +50,10 @@ export function setupGame() {
       gameInstance = this[instanceKey];
       gameInstanceCtxKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
       gameInstanceCtx = gameInstance[gameInstanceCtxKey];
+      gameInstanceMapObjectHolderKey = findChildKeyInObject(gameInstance, x => x instanceof MapObjectHolder);
+      gameInstanceMapObjectHolderObjsKey = MapObjectHolder.prototype.shuffle.toString().match(/this\.(\w+)\.length/)?.[1];
+      if (!gameInstanceMapObjectHolderObjsKey) throw new Error('[GSM] Failed to find object holder objs key!');
+
       console.log('[GSM] Game instance:', gameInstance);
 
       onGameInitialize?.(this, args);
