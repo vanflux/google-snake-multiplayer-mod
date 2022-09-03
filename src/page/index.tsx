@@ -1,6 +1,9 @@
+import React from 'react';
 import { addCleanupFn, cleanup } from "./cleanup";
+import { ExtraHeader } from './components/extra-header';
 import { createOtherGameInstance, renderOtherGameInstance, updateOtherGameInstance } from "./game-instance-sharing";
-import { gameInstance, gameInstanceCtx, setOnGameBeforeGameRender, setOnGameBeforePlayerRender, setOnGameInitialize, setupGame } from "./hooks/game-hook";
+import { gameInstanceCtx, setOnGameBeforeGameRender, setOnGameBeforePlayerRender, setOnGameInitialize, setupGame } from "./hooks/game-hook";
+import { setupHeaderUI } from "./hooks/header-ui-hook";
 import { deserializeGameInstance, serializeGameInstance } from "./serializers/game-instance-serializer";
 import { setupSocket, socket } from "./socket";
 
@@ -35,10 +38,14 @@ export async function pageLoadedEntry() {
     setOnGameInitialize(gameRenderCtx => {
       addCleanupFn(runInLoop());
       
+      // Setup ui hooks
+      setupHeaderUI(<ExtraHeader></ExtraHeader>);
+
       // Setup communication
       setupSocket();
       socket.on('connect', () => {
         console.log('[GSM] Connected to the server!');
+        others.clear();
       });
       socket.on('other_connect', ({id}) => {
         console.log('[GSM] Other connect', id);

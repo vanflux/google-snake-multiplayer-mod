@@ -1,5 +1,7 @@
 import { Server } from "socket.io";
 
+const port = 3512;
+
 export const server = new Server({
     transports: ['websocket'],
     cors: { origin: '*' },
@@ -22,5 +24,6 @@ server.on('connection', (socket) => {
     });
 });
 
-server.listen(3512);
+server.listen(port);
+console.log(`Server listening at ${port}`);
 

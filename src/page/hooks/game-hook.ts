@@ -44,7 +44,6 @@ export function setupGame() {
       gameInstance = this[instanceKey];
       gameInstanceCtxKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
       gameInstanceCtx = gameInstance[gameInstanceCtxKey];
-      console.log('gameInstanceCtx', gameInstanceCtx)
       console.log('[GSM] Game instance:', gameInstance);
 
       onGameInitialize?.(this, args);
