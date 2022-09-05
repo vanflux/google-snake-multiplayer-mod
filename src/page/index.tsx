@@ -1,8 +1,8 @@
 import React from 'react';
 import { addCleanupFn, cleanup } from "./cleanup";
 import { ExtraHeader } from './components/extra-header';
-import { createOtherGameInstance, renderOtherGameInstance } from "./game-instance-sharing";
-import { gameInstance, gameInstanceCtx, gameInstanceMapObjectHolderKey, gameInstanceMapObjectHolderObjsKey, setOnGameBeforeGameRender, setOnGameBeforePlayerRender, setOnGameInitialize, setupGame } from "./hooks/game-hook";
+import { createOtherGameInstance, getShareableGameInstance, renderOtherGameInstance } from "./game-instance-sharing";
+import { gameInstanceCtx, setOnGameBeforeGameRender, setOnGameBeforePlayerRender, setOnGameInitialize, setupGame } from "./hooks/game-hook";
 import { setupHeaderUI } from "./hooks/header-ui-hook";
 import { ArrayMapper } from './serializers/mappers/array-mapper';
 import { ObjectMapper } from './serializers/mappers/object-mapper';
@@ -87,7 +87,7 @@ export async function pageLoadedEntry() {
     setOnGameBeforeGameRender((gameRenderCtx, [renderPart]) => {
       try {
         if (lastDataSend === undefined || Date.now() - lastDataSend > 20) {
-          const serializedResult = serializer.serialize({...{...gameInstance, [gameInstanceMapObjectHolderKey]: {[gameInstanceMapObjectHolderObjsKey]: gameInstance[gameInstanceMapObjectHolderKey][gameInstanceMapObjectHolderObjsKey]}}, renderPart});
+          const serializedResult = serializer.serialize(getShareableGameInstance(renderPart));
           socket.emit('data', serializedResult.data);
           lastDataSend = Date.now();
         }

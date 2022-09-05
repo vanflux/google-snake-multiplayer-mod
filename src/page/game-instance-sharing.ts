@@ -1,4 +1,4 @@
-import { gameInstance, gameInstanceCtxKey, Header, lastGameRenderCtx, Menu, PlayerRenderer, Settings, SnakeBodyConfig, Vector2 } from "./hooks/game-hook";
+import { gameInstance, gameInstanceCtxKey, gameInstanceMapObjectHolderKey, gameInstanceMapObjectHolderObjsKey, Header, lastGameRenderCtx, Menu, PlayerRenderer, Settings, SnakeBodyConfig, Vector2 } from "./hooks/game-hook";
 
 export function createOtherGameInstance() {
   const otherInstance: any = {};
@@ -26,4 +26,16 @@ export function createOtherGameInstance() {
 
 export function renderOtherGameInstance(otherRenderer: any, otherInstance: any, resolution: any) {
   otherRenderer.render(otherInstance.renderPart, true, resolution);
+}
+
+export function getShareableGameInstance(renderPart: number) {
+  return {
+    ...{
+      ...gameInstance,
+      [gameInstanceMapObjectHolderKey]: {
+        [gameInstanceMapObjectHolderObjsKey]: gameInstance[gameInstanceMapObjectHolderKey][gameInstanceMapObjectHolderObjsKey],
+      },
+    },
+    renderPart,
+  };
 }
