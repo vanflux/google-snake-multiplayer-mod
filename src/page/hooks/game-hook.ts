@@ -29,6 +29,7 @@ let initialized = false;
 let gameRenderStarted = false;
 
 export function setupGame() {
+  const start = Date.now();
   Vector2 = findClassByMethod('clone', 0, x => x.includes('(this.x,this.y)'));
   GameRenderer = findClassByMethod('render', 2, x => x.includes('this.context.fillRect(0,0,this.context.canvas.width,this.context.canvas.height);'));
   PlayerRenderer = findClassByMethod('render', 3, x => x.includes('RIGHT') && x.includes('DOWN'));
@@ -37,6 +38,8 @@ export function setupGame() {
   Header = findClassByMethod(/.*/, 1, x => x.includes('images/icons/material'));
   MapObjectHolder = findClassByMethod('shuffle', 1, () => true);
   SnakeBodyConfig = findClassByMethod('reset', 0, x => x.includes('"RIGHT"') && x.includes('this.direction') && x.includes('.push(new'));
+  const end = Date.now();
+  console.log('[GSM] Game hooks took', end-start, 'ms');
 
   const revertOnGameRenderDetour = detour(GameRenderer.prototype, 'render', function (...args: any) {
     gameRenderStarted = true;

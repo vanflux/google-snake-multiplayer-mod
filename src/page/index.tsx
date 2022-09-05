@@ -2,9 +2,10 @@ import React from 'react';
 import { addCleanupFn, cleanup } from "./cleanup";
 import { ExtraHeader } from './components/extra-header';
 import { createOtherGameInstance, renderOtherGameInstance, updateOtherGameInstance } from "./game-instance-sharing";
-import { gameInstanceCtx, setOnGameBeforeGameRender, setOnGameBeforePlayerRender, setOnGameInitialize, setupGame } from "./hooks/game-hook";
+import { gameInstance, gameInstanceCtx, setOnGameBeforeGameRender, setOnGameBeforePlayerRender, setOnGameInitialize, Settings, setupGame } from "./hooks/game-hook";
 import { setupHeaderUI } from "./hooks/header-ui-hook";
 import { deserializeGameInstance, serializeGameInstance } from "./serializers/game-instance-serializer";
+import { vfSerialize } from './serializers/vf-serializer';
 import { setupSocket, socket } from "./socket";
 
 export async function pageLoadedEntry() {
@@ -40,6 +41,9 @@ export async function pageLoadedEntry() {
       
       // Setup ui hooks
       setupHeaderUI(<ExtraHeader></ExtraHeader>);
+
+      console.log('>>>>>>>>>', //vfSerialize(gameInstance));
+      console.log('>>>>>>>>>', //JSON.stringify(vfSerialize(gameInstance)).length);
 
       // Setup communication
       setupSocket();
