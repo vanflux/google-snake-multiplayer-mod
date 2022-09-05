@@ -9,6 +9,7 @@ export let Menu: Class
 export let Header: Class;
 export let MapObjectHolder: Class;
 export let SnakeBodyConfig: Class;
+export let GameInstance: Class;
 
 export let gameInstance: any;
 export let gameInstanceCtx: any;
@@ -39,7 +40,7 @@ export function setupGame() {
   MapObjectHolder = findClassByMethod('shuffle', 1, () => true);
   SnakeBodyConfig = findClassByMethod('reset', 0, x => x.includes('"RIGHT"') && x.includes('this.direction') && x.includes('.push(new'));
   const end = Date.now();
-  console.log('[GSM] Game hooks took', end-start, 'ms');
+  console.log('[GSM] Game hooks class by function took', end-start, 'ms');
 
   const revertOnGameRenderDetour = detour(GameRenderer.prototype, 'render', function (...args: any) {
     gameRenderStarted = true;
@@ -51,6 +52,7 @@ export function setupGame() {
 
       const instanceKey = findChildKeyInObject(this, x => x.ticks !== undefined && x.settings !== undefined && x.menu !== undefined);
       gameInstance = this[instanceKey];
+      GameInstance = gameInstance.constructor;
       gameInstanceCtxKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
       gameInstanceCtx = gameInstance[gameInstanceCtxKey];
       gameInstanceMapObjectHolderKey = findChildKeyInObject(gameInstance, x => x instanceof MapObjectHolder);

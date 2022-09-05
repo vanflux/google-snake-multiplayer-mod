@@ -1,11 +1,14 @@
 import React from 'react';
 import { addCleanupFn, cleanup } from "./cleanup";
 import { ExtraHeader } from './components/extra-header';
-import { createOtherGameInstance, renderOtherGameInstance, updateOtherGameInstance } from "./game-instance-sharing";
-import { gameInstance, gameInstanceCtx, setOnGameBeforeGameRender, setOnGameBeforePlayerRender, setOnGameInitialize, Settings, setupGame } from "./hooks/game-hook";
+import { createOtherGameInstance, renderOtherGameInstance } from "./game-instance-sharing";
+import { gameInstance, gameInstanceCtx, gameInstanceMapObjectHolderKey, gameInstanceMapObjectHolderObjsKey, setOnGameBeforeGameRender, setOnGameBeforePlayerRender, setOnGameInitialize, setupGame } from "./hooks/game-hook";
 import { setupHeaderUI } from "./hooks/header-ui-hook";
-import { deserializeGameInstance, serializeGameInstance } from "./serializers/game-instance-serializer";
-import { vfSerialize } from './serializers/vf-serializer';
+import { ArrayMapper } from './serializers/mappers/array-mapper';
+import { ObjectMapper } from './serializers/mappers/object-mapper';
+import { SimpleMapper } from './serializers/mappers/simple-mapper';
+import { Vector2Mapper } from './serializers/mappers/vector2-mapper';
+import { buildVfSerializer, VFSerializer } from './serializers/vf-serializer';
 import { setupSocket, socket } from "./socket";
 
 export async function pageLoadedEntry() {
@@ -35,15 +38,30 @@ export async function pageLoadedEntry() {
     console.log('[GSM] Starting...');
 
     // Setup game hooks and multiplayer logic
+
+    let serializer: VFSerializer;
+
     setupGame();
     setOnGameInitialize(gameRenderCtx => {
       addCleanupFn(runInLoop());
+
+      serializer = buildVfSerializer([
+        new SimpleMapper(),
+        new ArrayMapper(),
+        new ObjectMapper(),
+        new Vector2Mapper(),
+      ]);
       
       // Setup ui hooks
       setupHeaderUI(<ExtraHeader></ExtraHeader>);
 
-      console.log('>>>>>>>>>', //vfSerialize(gameInstance));
-      console.log('>>>>>>>>>', //JSON.stringify(vfSerialize(gameInstance)).length);
+      /*console.log('------------------------');
+      const serializedResult = serializer.serialize(gameInstance);
+      console.log('[GSM] Serialized result', serializedResult.data, serializedResult.skipped);
+      const out = {};
+      const deserializedResult = serializer.deserialize(serializedResult.data, out);
+      console.log('[GSM] Deserialized result', deserializedResult.data, deserializedResult.skipped);
+      console.log('------------------------');*/
 
       // Setup communication
       setupSocket();
@@ -63,15 +81,14 @@ export async function pageLoadedEntry() {
       socket.on('other_data', ({id, data: serializedData}) => {
         const other = others.get(id);
         if (!other) return;
-        const data = deserializeGameInstance(serializedData);
-        updateOtherGameInstance(other.otherInstance, data);
+        serializer.deserialize(serializedData, other.otherInstance);
       });
     });
     setOnGameBeforeGameRender((gameRenderCtx, [renderPart]) => {
       try {
         if (lastDataSend === undefined || Date.now() - lastDataSend > 20) {
-          const serializedData = serializeGameInstance(renderPart);
-          socket.emit('data', serializedData);
+          const serializedResult = serializer.serialize({...{...gameInstance, [gameInstanceMapObjectHolderKey]: {[gameInstanceMapObjectHolderObjsKey]: gameInstance[gameInstanceMapObjectHolderKey][gameInstanceMapObjectHolderObjsKey]}}, renderPart});
+          socket.emit('data', serializedResult.data);
           lastDataSend = Date.now();
         }
       } catch (exc) {
