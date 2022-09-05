@@ -7,6 +7,7 @@ export class ObjectMapper implements Mapper {
   types = [
     'Object',
     
+    // FIXME: Maybe move it to outside? "Inject" on the ObjectMapper creation
     Settings.name,
     SnakeBodyConfig.name,
     GameInstance.name,

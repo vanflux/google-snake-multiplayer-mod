@@ -13,6 +13,9 @@ export class Vector2Mapper implements Mapper {
 
   unmap(mapped: any, dest: any, ctx: SerializationCtx) {
     dest = new Vector2(mapped[2][0], mapped[2][1]);
+    // FIXME: Probably this is not a problem here, but on the other game instance
+    // creation, the vector references are messing up with the game instance.
+
     /*if (!dest) {
       dest = new Vector2(mapped[2][0], mapped[2][1]);
     } else {
