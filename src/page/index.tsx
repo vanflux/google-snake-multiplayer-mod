@@ -15,6 +15,8 @@ export async function pageLoadedEntry() {
   if (window.cleanup) window.cleanup();
   window.cleanup = cleanup;
 
+  let bytesSentStartTime = 0;
+  let bytesSent = 0;
   let others = new Map<string, {otherInstance: any, otherRenderer: any}>();
   let lastDataSend = 0;
 
@@ -88,6 +90,13 @@ export async function pageLoadedEntry() {
       try {
         if (lastDataSend === undefined || Date.now() - lastDataSend > 20) {
           const serializedResult = serializer.serialize(getShareableGameInstance(renderPart));
+          bytesSent += JSON.stringify(serializedResult.data).length;
+          if (Date.now() - bytesSentStartTime >= 1000) {
+            console.log('Bytes sent:', bytesSent);
+            bytesSentStartTime = Date.now();
+            bytesSent = 0; // FIXME: Bizarre amount of data being transmited on the network
+                           // also it takes a lot of time to deserialize on the clients
+          }
           socket.emit('data', serializedResult.data);
           lastDataSend = Date.now();
         }
