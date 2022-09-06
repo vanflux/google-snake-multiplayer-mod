@@ -9,7 +9,6 @@ export class ObjectMapper implements Mapper {
     Settings.name,
     SnakeBodyConfig.name,
     GameInstance.name,
-    //MapObjectHolder.name,
     Set.name,
     Map.name,
     Object.name,

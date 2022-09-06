@@ -92,7 +92,7 @@ export async function pageLoadedEntry() {
           const serializedResult = serializer.serialize(getShareableGameInstance(renderPart));
           bytesSent += JSON.stringify(serializedResult.data).length;
           if (Date.now() - bytesSentStartTime >= 1000) {
-            console.log('Bytes sent:', bytesSent);
+            //console.log('Bytes sent:', bytesSent);
             bytesSentStartTime = Date.now();
             bytesSent = 0; // FIXME: Bizarre amount of data being transmited on the network
                            // also it takes a lot of time to deserialize on the clients

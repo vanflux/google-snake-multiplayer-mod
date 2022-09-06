@@ -10,12 +10,11 @@ export function createOtherGameInstance() {
   const otherInstance: any = new GameInstance(settings, menu, header);
 
   Object.assign(otherInstance, {
-    [gameInstanceCtxKey]: document.createElement('canvas').getContext('2d'), // Canvas context
     [gameInstanceClass1Key]: gameInstance[gameInstanceClass1Key], // A important class for rendering snake
     [gameInstanceMapObjectHolderKey]: gameInstance[gameInstanceMapObjectHolderKey], // By default, the map objects are shared between gameInstance and others
   });
   
-  const otherRenderer: any = new PlayerRenderer(otherInstance, lastGameRenderCtx.settings, lastGameRenderCtx[gameInstanceCtxKey]);
+  const otherRenderer: any = new PlayerRenderer(otherInstance, settings, lastGameRenderCtx[gameInstanceCtxKey]);
   console.log('[GSM] Other game instance:', otherInstance);
 
   return {otherRenderer, otherInstance}
