@@ -1,13 +1,13 @@
 import { Mapper, SerializationCtx } from "../vf-serializer";
 
 export class ArrayMapper implements Mapper {
-  name = 'array';
+  id = 3;
 
   types = ['Array'];
 
   map(unmapped: any[], ctx: SerializationCtx) {
     const ref = ctx.refs.size;
-    return [this.name, ref, unmapped.map(item => ctx.serialize(item, ctx))];
+    return [this.id, ref, unmapped.map(item => ctx.serialize(item, ctx))];
   }
 
   unmap(mapped: any, dest: any, ctx: SerializationCtx) {

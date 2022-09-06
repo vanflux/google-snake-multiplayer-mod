@@ -2,13 +2,13 @@ import { GameInstance, Settings, SnakeBodyConfig, Vector2 } from "../../hooks/ga
 import { Mapper, SerializationCtx } from "../vf-serializer";
 
 export class Vector2Mapper implements Mapper {
-  name = 'v2';
+  id = 6;
 
   types = [Vector2.name];
 
   map(unmapped: any, ctx: SerializationCtx) {
     const ref = ctx.refs.size;
-    return [this.name, ref, [unmapped.x, unmapped.y]];
+    return [this.id, ref, [unmapped.x, unmapped.y]];
   }
 
   unmap(mapped: any, dest: any, ctx: SerializationCtx) {

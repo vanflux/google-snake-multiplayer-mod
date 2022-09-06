@@ -2,7 +2,7 @@ import { GameInstance, MapObjectHolder, Settings, SnakeBodyConfig, Vector2 } fro
 import { Mapper, SerializationCtx } from "../vf-serializer";
 
 export class ObjectMapper implements Mapper {
-  name = 'object';
+  id = 4;
 
   types = [
     'Object',
@@ -24,7 +24,7 @@ export class ObjectMapper implements Mapper {
       const serialized = ctx.serialize(unmapped[key], ctx);
       if (serialized !== undefined) out[key] = serialized;
     }
-    return [this.name, ref, out];
+    return [this.id, ref, out];
   }
 
   unmap(mapped: any, dest: any, ctx: SerializationCtx) {
