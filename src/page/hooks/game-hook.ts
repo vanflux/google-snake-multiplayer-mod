@@ -1,5 +1,5 @@
 import { addCleanupFn } from "../cleanup";
-import { Class, detour, findChildKeyInObject, findClassByMethod } from "../utils";
+import { Class, detour, findChildKeyInObject, findChildKeysInObject, findClassByMethod } from "../utils";
 
 export let Vector2: Class;
 export let GameRenderer: Class;
@@ -11,14 +11,18 @@ export let MapObjectHolder: Class;
 export let SnakeBodyConfig: Class;
 export let GameClass1: Class; // FIXME: naming
 export let GameInstance: Class;
+export let AssetRenderer: Class;
 
 export let gameInstance: any;
 export let gameInstanceCtx: any;
 export let gameInstanceCtxKey: any;
+export let gameInstanceCtxEyeColorKey: any;
 export let gameInstanceMapObjectHolderKey: any;
 export let gameInstanceMapObjectHolderObjsKey: any;
 export let gameInstanceClass1Key: any;
 export let lastGameRenderCtx: any;
+export let changeAssetColorKey: any;
+export let changeAssetColor: any;
 
 let onGameInitialize: (gameRenderCtx: any, gameRenderArgs: any)=>any;
 let onGameBeforeGameRender: (gameRenderCtx: any, gameRenderArgs: any)=>any;
@@ -41,7 +45,9 @@ export function setupGame() {
   Header = findClassByMethod(/.*/, 1, x => x.includes('images/icons/material'));
   MapObjectHolder = findClassByMethod('shuffle', 1, () => true);
   SnakeBodyConfig = findClassByMethod('reset', 0, x => x.includes('"RIGHT"') && x.includes('this.direction') && x.includes('.push(new'));
-  GameClass1 = findClassByMethod('reset', 0, x => x.includes('.push([])') && x.includes(`new ${Vector2.name}(0,0)`))
+  GameClass1 = findClassByMethod('reset', 0, x => x.includes('.push([])') && x.includes(`new ${Vector2.name}(0,0)`));
+  AssetRenderer = findClassByMethod('render', 5, x => x.includes('this.context.drawImage') && x.includes('this.context.translate') && x.includes('this.context.rotate'));
+
   const end = Date.now();
   console.log('[GSM] Game hooks class by function took', end-start, 'ms');
 
@@ -68,11 +74,14 @@ export function setupGame() {
       GameInstance = gameInstance.constructor;
       gameInstanceCtxKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
       gameInstanceCtx = gameInstance[gameInstanceCtxKey];
+      gameInstanceCtxEyeColorKey = findChildKeysInObject(gameInstanceCtx, x => typeof x === 'string' && !!x.match(/\#[a-fA-F0-9]{3,6}/))[0];
       gameInstanceMapObjectHolderKey = findChildKeyInObject(gameInstance, x => x instanceof MapObjectHolder);
       gameInstanceMapObjectHolderObjsKey = MapObjectHolder.prototype.shuffle.toString().match(/this\.(\w+)\.length/)?.[1];
       if (!gameInstanceMapObjectHolderObjsKey) throw new Error('[GSM] Failed to find object holder objs key!');
       gameInstanceClass1Key = findChildKeyInObject(gameInstance, x => x instanceof GameClass1);
-
+      changeAssetColorKey = findChildKeyInObject(window, x => typeof x === 'function' && x.toString().includes('.getImageData(0,0'));
+      changeAssetColor = window[changeAssetColorKey];
+      
       console.log('[GSM] Game instance:', gameInstance);
 
       onGameInitialize?.(this, args);

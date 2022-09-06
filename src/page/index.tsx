@@ -2,7 +2,7 @@ import React from 'react';
 import { addCleanupFn, cleanup } from "./cleanup";
 import { ExtraHeader } from './components/extra-header';
 import { createOtherGameInstance, getShareableGameInstance, renderOtherGameInstance } from "./game-instance-sharing";
-import { gameInstanceCtx, setOnGameBeforeGameRender, setOnGameBeforePlayerRender, setOnGameInitialize, setupGame } from "./hooks/game-hook";
+import { changeAssetColor, gameInstanceCtx, gameInstanceCtxEyeColorKey, gameInstanceCtxKey, setOnGameBeforeGameRender, setOnGameBeforePlayerRender, setOnGameInitialize, setupGame } from "./hooks/game-hook";
 import { setupHeaderUI } from "./hooks/header-ui-hook";
 import { ArrayMapper } from './serializers/mappers/array-mapper';
 import { ObjectMapper } from './serializers/mappers/object-mapper';
@@ -83,7 +83,14 @@ export async function pageLoadedEntry() {
       socket.on('other_data', ({id, data: serializedData}) => {
         const other = others.get(id);
         if (!other) return;
+        const oldEyeColor = other.otherInstance?.[gameInstanceCtxKey]?.[gameInstanceCtxEyeColorKey];
         serializer.deserialize(serializedData, other.otherInstance);
+        const newEyeColor = other.otherInstance?.[gameInstanceCtxKey]?.[gameInstanceCtxEyeColorKey];
+        if (newEyeColor !== oldEyeColor) {
+          console.log(other.otherRenderer.La.constructor.name)
+          //changeAssetColor(other.otherRenderer.La, '#5282F2', newEyeColor); // FIXME: Change La and wa to dynamic assetRenderer
+          //changeAssetColor(other.otherRenderer.wa, '#5282F2', newEyeColor);
+        }
       });
     });
     setOnGameBeforeGameRender((gameRenderCtx, [renderPart]) => {
