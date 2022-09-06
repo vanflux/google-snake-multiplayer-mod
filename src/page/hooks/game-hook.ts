@@ -9,6 +9,7 @@ export let Menu: Class
 export let Header: Class;
 export let MapObjectHolder: Class;
 export let SnakeBodyConfig: Class;
+export let GameClass1: Class; // FIXME: naming
 export let GameInstance: Class;
 
 export let gameInstance: any;
@@ -16,6 +17,7 @@ export let gameInstanceCtx: any;
 export let gameInstanceCtxKey: any;
 export let gameInstanceMapObjectHolderKey: any;
 export let gameInstanceMapObjectHolderObjsKey: any;
+export let gameInstanceClass1Key: any;
 export let lastGameRenderCtx: any;
 
 let onGameInitialize: (gameRenderCtx: any, gameRenderArgs: any)=>any;
@@ -39,8 +41,19 @@ export function setupGame() {
   Header = findClassByMethod(/.*/, 1, x => x.includes('images/icons/material'));
   MapObjectHolder = findClassByMethod('shuffle', 1, () => true);
   SnakeBodyConfig = findClassByMethod('reset', 0, x => x.includes('"RIGHT"') && x.includes('this.direction') && x.includes('.push(new'));
+  GameClass1 = findClassByMethod('reset', 0, x => x.includes('.push([])') && x.includes(`new ${Vector2.name}(0,0)`))
   const end = Date.now();
   console.log('[GSM] Game hooks class by function took', end-start, 'ms');
+
+  /*console.log('Vector2 class:', Vector2.name);
+  console.log('GameRenderer class:', GameRenderer.name);
+  console.log('PlayerRenderer class:', PlayerRenderer.name);
+  console.log('Settings class:', Settings.name);
+  console.log('Menu class:', Menu.name);
+  console.log('Header class:', Header.name);
+  console.log('MapObjectHolder class:', MapObjectHolder.name);
+  console.log('SnakeBodyConfig class:', SnakeBodyConfig.name);
+  console.log('GameClass1 class:', GameClass1.name);*/
 
   const revertOnGameRenderDetour = detour(GameRenderer.prototype, 'render', function (...args: any) {
     gameRenderStarted = true;
@@ -58,6 +71,7 @@ export function setupGame() {
       gameInstanceMapObjectHolderKey = findChildKeyInObject(gameInstance, x => x instanceof MapObjectHolder);
       gameInstanceMapObjectHolderObjsKey = MapObjectHolder.prototype.shuffle.toString().match(/this\.(\w+)\.length/)?.[1];
       if (!gameInstanceMapObjectHolderObjsKey) throw new Error('[GSM] Failed to find object holder objs key!');
+      gameInstanceClass1Key = findChildKeyInObject(gameInstance, x => x instanceof GameClass1);
 
       console.log('[GSM] Game instance:', gameInstance);
 

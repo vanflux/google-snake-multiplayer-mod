@@ -1,24 +1,21 @@
-import { gameInstance, gameInstanceCtxKey, gameInstanceMapObjectHolderKey, gameInstanceMapObjectHolderObjsKey, Header, lastGameRenderCtx, Menu, PlayerRenderer, Settings, SnakeBodyConfig, Vector2 } from "./hooks/game-hook";
+import { GameInstance, gameInstance, gameInstanceClass1Key, gameInstanceCtxKey, gameInstanceMapObjectHolderKey, gameInstanceMapObjectHolderObjsKey, Header, lastGameRenderCtx, Menu, PlayerRenderer, Settings, SnakeBodyConfig, Vector2 } from "./hooks/game-hook";
 
 export function createOtherGameInstance() {
-  const otherInstance: any = {};
-  const otherRenderer: any = new PlayerRenderer(otherInstance, lastGameRenderCtx.settings, lastGameRenderCtx[gameInstanceCtxKey]);
-
   const div = () => document.createElement('div');
   const canvas = () => document.createElement('canvas');
   const settings = new Settings(div());
   const menu = new Menu(settings, div(), div(), canvas(), div(), div(), div(), div(), div(), div(), div(), div(), div(), div(), div(), div());
   const header = new Header(settings, div(), div(), div(), div(), div(), div(), div(), div(), div(), div(), div());
 
-  const aux = {
-    ...gameInstance,
-    settings,
-    menu,
-    header,
-    [gameInstanceCtxKey]: document.createElement('canvas').getContext('2d'),
-  };
+  const otherInstance: any = new GameInstance(settings, menu, header);
 
-  Object.assign(otherInstance, aux);
+  Object.assign(otherInstance, {
+    [gameInstanceCtxKey]: document.createElement('canvas').getContext('2d'), // Canvas context
+    [gameInstanceClass1Key]: gameInstance[gameInstanceClass1Key], // A important class for rendering snake
+    [gameInstanceMapObjectHolderKey]: gameInstance[gameInstanceMapObjectHolderKey], // By default, the map objects are shared between gameInstance and others
+  });
+  
+  const otherRenderer: any = new PlayerRenderer(otherInstance, lastGameRenderCtx.settings, lastGameRenderCtx[gameInstanceCtxKey]);
   console.log('[GSM] Other game instance:', otherInstance);
 
   return {otherRenderer, otherInstance}

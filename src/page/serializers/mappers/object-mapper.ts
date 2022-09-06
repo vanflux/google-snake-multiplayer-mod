@@ -5,8 +5,6 @@ export class ObjectMapper implements Mapper {
   id = 4;
 
   types = [
-    'Object',
-    
     // FIXME: Maybe move it to outside? "Inject" on the ObjectMapper creation
     Settings.name,
     SnakeBodyConfig.name,
