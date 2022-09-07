@@ -8,7 +8,7 @@ export type OtherGameSharing = ReturnType<GameSharing['createOther']>;
 export type ThisGameSharing = ReturnType<GameSharing['getThisData']>;
 
 const MAX_LATENCY_COMPENSATION = 1000;
-const LATENCY_COMPENSATION_AMPLIFIER = 1.2;
+const LATENCY_COMPENSATION_AMPLIFIER = 1.1;
 
 export function createGameSharing() {
   const serializer = buildSerializer([
@@ -48,7 +48,7 @@ export function createGameSharing() {
     };
 
     const updateLatency = (newLatency: number) => {
-      otherInstance.latency = Math.min(MAX_LATENCY_COMPENSATION, (latency + newLatency) * LATENCY_COMPENSATION_AMPLIFIER);
+      otherInstance.latency = Math.min(MAX_LATENCY_COMPENSATION, ((latency / 2) + (newLatency / 2)) * LATENCY_COMPENSATION_AMPLIFIER);
     };
     
     const render = (resolution: any) => {
