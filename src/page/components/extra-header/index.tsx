@@ -2,10 +2,14 @@ import React, { KeyboardEvent, useEffect, useState } from 'react';
 import { connection } from '../../multiplayer/connection';
 import styles from './index.module.css';
 
+const defaultIp = '127.0.0.1';
+const defaultPort = 3512;
+const defaultProtocol = 'ws';
+
 export function ExtraHeader() {
   const [connected, setConnected] = useState(connection.connected);
   const [serverUrlError, setServerUrlError] = useState(false);
-  const [serverUrl, setServerUrl] = useState('ws://127.0.0.1:3512');
+  const [serverUrl, setServerUrl] = useState(`${defaultProtocol}://${defaultIp}:${defaultPort}`);
 
   useEffect(() => {
     connection.on('connect', () => {
@@ -14,7 +18,7 @@ export function ExtraHeader() {
     connection.on('disconnect', () => {
       setConnected(false);
     });
-    connection.connect('ws', '127.0.0.1', 3512);
+    connection.connect(defaultProtocol, defaultIp, defaultPort);
   }, []);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {

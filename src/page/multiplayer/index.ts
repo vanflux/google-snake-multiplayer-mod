@@ -1,10 +1,11 @@
-import { setOnGameBeforeGameRender, setOnGameBeforePlayerRender } from "../game-hooks/game-logic-hook";
+import { gameInstance, gameInstanceCtx, setOnGameBeforeBoardRender, setOnGameBeforePlayerRender } from "../game-hooks/game-logic-hook";
 import { createGameSharing, OtherGameSharing } from "./game-sharing";
 import { connection } from "./connection";
 
 export function setupMultiplayer() {
   const others = new Map<string, OtherGameSharing>(); // Other game sharing map
   let lastDataSend = 0; // Last data send date
+  let lastDirection: string;
 
   const gameSharing = createGameSharing();
 
@@ -27,17 +28,28 @@ export function setupMultiplayer() {
     if (!other) return;
     other.updateData(data);
   });
+  connection.on('latency', ({latency}) => {
+    gameSharing.updateLatency(latency);
+  });
+  connection.on('other_latency', ({id, latency}) => {
+    const other = others.get(id);
+    if (!other) return;
+    other.updateLatency(latency);
+  });
   
-  setOnGameBeforeGameRender((_, [renderPart]) => {
+  setOnGameBeforeBoardRender(() => {
     // Send player data to others
-    if (lastDataSend === undefined || Date.now() - lastDataSend > 20) {
-      const serializedData = gameSharing.getThisData(renderPart);
-      connection.send('data', serializedData);
+    const curDirection = gameInstanceCtx.direction;
+    if (lastDataSend === undefined || Date.now() - lastDataSend > 250 || lastDirection !== curDirection) {
       lastDataSend = Date.now();
+      lastDirection = curDirection;
+      const serializedData = gameSharing.getThisData();
+      connection.send('data', serializedData);
     }
   });
   setOnGameBeforePlayerRender((_, [,,resolution]) => {
     // Render other players
+    others.forEach(other => other.update());
     others.forEach(other => other.render(resolution));
   });
 }

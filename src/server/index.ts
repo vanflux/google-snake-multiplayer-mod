@@ -5,12 +5,13 @@ const port = 3512;
 export const server = new Server({
     transports: ['websocket'],
     cors: { origin: '*' },
-    
+    pingInterval: 2000,
 });
 
 server.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
-    
+    let lastPingSent = Date.now();
+
     [...server.sockets.sockets.values()].map(s => s.id).filter(id => socket.id !== id).forEach(id => socket.emit('other_connect', {id}));
     socket.broadcast.emit('other_connect', {id: socket.id});
 
@@ -21,6 +22,18 @@ server.on('connection', (socket) => {
     socket.on('disconnect', () => {
         socket.broadcast.emit('other_disconnect', {id: socket.id});
         console.log('Client disconnected:', socket.id);
+    });
+
+    socket.conn.on('packet', (packet) => {
+        if (packet.type === 'pong') {
+            const latency = Date.now() - lastPingSent;
+            socket.emit('latency', {latency});
+            socket.broadcast.emit('other_latency', {id: socket.id, latency});
+        }
+    });
+      
+    socket.conn.on('packetCreate', (packet) => {
+        if (packet.type === 'ping') lastPingSent = Date.now();
     });
 });
 
