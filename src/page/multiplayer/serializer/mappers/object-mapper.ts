@@ -1,5 +1,5 @@
-import { GameInstance, MapObjectHolder, Settings, SnakeBodyConfig, Vector2 } from "../../hooks/game-hook";
-import { Mapper, SerializationCtx } from "../vf-serializer";
+import { Mapper, SerializationCtx } from "..";
+import { GameInstance, Settings, SnakeBodyConfig } from "../../../game-hooks/game-logic-hook";
 
 export class ObjectMapper implements Mapper {
   id = 4;

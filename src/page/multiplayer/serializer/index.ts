@@ -1,4 +1,7 @@
-export type VFSerializer = ReturnType<typeof buildVfSerializer>;
+// This class is responsible for serializing everything, any object of any class could be serialized here
+// you only need to make a mapper for it
+
+export type Serializer = ReturnType<typeof buildSerializer>;
 
 export const nullId = 0;
 export const refId = 1;
@@ -18,7 +21,7 @@ export interface Mapper {
   unmap(mapped: any, dest: any, ctx: SerializationCtx): any;
 }
 
-export function buildVfSerializer(mapperList: Mapper[]) {
+export function buildSerializer(mapperList: Mapper[]) {
   const skipped = new Set<string>();
   const mappersById = mapperList.reduce((arr, mapper) => (arr[mapper.id] = mapper, arr), [] as Mapper[]);
   const mappersByType = new Map(mapperList.flatMap(mapper => mapper.types.map(type => [type, mapper])));

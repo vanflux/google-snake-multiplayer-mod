@@ -1,4 +1,4 @@
-import { Mapper, SerializationCtx } from "../vf-serializer";
+import { Mapper, SerializationCtx } from "..";
 
 export class ArrayMapper implements Mapper {
   id = 3;

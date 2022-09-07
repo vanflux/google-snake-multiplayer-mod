@@ -1,4 +1,4 @@
-import { Mapper, SerializationCtx } from "../vf-serializer";
+import { Mapper, SerializationCtx } from "..";
 
 export class SimpleMapper implements Mapper {
   id = 5;

@@ -13,6 +13,7 @@
 	"dependencies": {
 		"@types/react": "^18.0.18",
 		"@types/react-dom": "^18.0.6",
+		"events": "^3.3.0",
 		"react": "^18.2.0",
 		"react-dom": "^18.2.0",
 		"socket.io": "^4.5.1",

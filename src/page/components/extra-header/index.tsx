@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { socket } from '../../socket';
+import { connection } from '../../multiplayer/connection';
 import styles from './index.module.css';
 
 export function ExtraHeader() {
-  const [connected, setConnected] = useState(socket.connected);
+  const [connected, setConnected] = useState(connection.connected);
 
   useEffect(() => {
-    socket.on('connect', () => {
+    connection.on('connect', () => {
       setConnected(true);
     });
-    socket.on('disconnect', () => {
+    connection.on('disconnect', () => {
       setConnected(false);
     });
   }, []);

@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { ReactNode } from "react";
-import { addCleanupFn } from "../cleanup";
+import { addCleanupFn } from "../utils/cleanup";
 
 let onHeaderUIInitialize: ()=>any;
 
@@ -24,7 +24,7 @@ function renderExtraHeader(header: HTMLElement, extraHeader: ReactNode) {
   return () => (root.unmount(), container.remove());
 }
 
-export function setupHeaderUI(extraHeader: ReactNode) {
+export function setupHeaderUIHooks(extraHeader: ReactNode) {
   const id = setInterval(() => {
     const header = tryFindHeaderElement();
     if (!header) return;

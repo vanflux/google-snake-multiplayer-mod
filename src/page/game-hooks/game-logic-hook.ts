@@ -1,5 +1,5 @@
-import { addCleanupFn } from "../cleanup";
-import { Class, detour, findChildKeyInObject, findChildKeysInObject, findClassByMethod } from "../utils";
+import { addCleanupFn } from "../utils/cleanup";
+import { Class, detour, findChildKeyInObject, findChildKeysInObject, findClassByMethod } from "./utils";
 
 // This entire file is bizarre, it makes all necessary hooks to the game
 
@@ -37,7 +37,7 @@ export const setOnGameBeforePlayerRender = (handler: typeof onGameBeforePlayerRe
 let initialized = false;
 let gameRenderStarted = false;
 
-export function setupGame() {
+export function setupGameLogicHooks() {
   const start = Date.now();
   Vector2 = findClassByMethod('clone', 0, x => x.includes('(this.x,this.y)'));
   GameRenderer = findClassByMethod('render', 2, x => x.includes('this.context.fillRect(0,0,this.context.canvas.width,this.context.canvas.height);'));
@@ -76,15 +76,27 @@ export function setupGame() {
       
       console.log('[GSM] Game instance:', gameInstance);
 
-      onGameInitialize?.(this, args);
+      try {
+        onGameInitialize?.(this, args)
+      } catch(exc) {
+        console.error('[GSM] Game initialize error:', exc);
+      }
     }
-    onGameBeforeGameRender?.(this, args);
+    try {
+      onGameBeforeGameRender?.(this, args)
+    } catch(exc) {
+      console.error('[GSM] Game before game render error:', exc);
+    }
   });
 
   const revertOnPlayerRenderDetour = detour(PlayerRenderer.prototype, 'render', function (...args: any) {
     if (gameRenderStarted) {
       gameRenderStarted = false;
-      onGameBeforePlayerRender?.(this, args);
+      try {
+        onGameBeforePlayerRender?.(this, args)
+      } catch(exc) {
+        console.error('[GSM] Game before player render error:', exc);
+      }
     }
   });
 
