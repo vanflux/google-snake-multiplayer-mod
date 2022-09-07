@@ -42,11 +42,12 @@ export function ExtraHeader() {
 
   return <div className={styles.container}>
     <div className={styles.col}>
-      <span className={styles.title}>Multiplayer Mod</span>
+      <span className={styles.title}>MULTIPLAYER MOD</span>
+      <span className={styles.author}>by vanflux</span>
       <span className={connected ? styles.connected : styles.connecting}>{connected ? 'Connected' : 'Connecting...'}</span>
     </div>
     <div className={styles.col}>
-      <span>Server Ip:Port</span>
+      <span>Server Url</span>
       <input onKeyDown={handleKeyDown} className={serverUrlError ? styles.error : ''} onChange={e => handleIpPortChange(e.target.value)} value={serverUrl} placeholder='Server Url'></input>
     </div>
   </div>

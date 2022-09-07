@@ -1,55 +1,73 @@
 import { gameInstanceSnake, setOnGameBeforeBoardRender, setOnGameBeforeMainPlayerRender } from "../game-hooks/game-logic-hook";
-import { createGameSharing, OtherGameSharing } from "./game-sharing";
+import { createGameSharing, GameSharing, OtherGameSharing } from "./game-sharing";
 import { connection } from "./connection";
+import EventEmitter from "events";
 
-export function setupMultiplayer() {
-  const others = new Map<string, OtherGameSharing>(); // Other game sharing map
-  let lastDataSend = 0; // Last data send date
-  let lastDirection: string;
+class Multiplayer extends EventEmitter {
+  private others = new Map<string, OtherGameSharing>();
+  private lastDataSend = 0; // Last data send date
+  private lastDirection!: string;
+  private gameSharing!: GameSharing;
 
-  const gameSharing = createGameSharing();
+  getOthers() {
+    return this.others;
+  }
 
-  // Setup communication
-  connection.on('connect', () => {
-    console.log('[GSM] Connected to the server!');
-    others.clear();
-  });
-  connection.on('other_connect', ({id}) => {
-    console.log('[GSM] Other connect', id);
-    const other = gameSharing.createOther();
-    others.set(id, other);
-  });
-  connection.on('other_disconnect', ({id}) => {
-    console.log('[GSM] Other disconnect', id);
-    others.delete(id);
-  });
-  connection.on('other_data', ({id, data}) => {
-    const other = others.get(id);
-    if (!other) return;
-    other.updateData(data);
-  });
-  connection.on('latency', ({latency}) => {
-    gameSharing.updateLatency(latency);
-  });
-  connection.on('other_latency', ({id, latency}) => {
-    const other = others.get(id);
-    if (!other) return;
-    other.updateLatency(latency);
-  });
-  
-  setOnGameBeforeBoardRender(() => {
-    // Send player data to others
-    const curDirection = gameInstanceSnake.direction;
-    if (lastDataSend === undefined || Date.now() - lastDataSend > 250 || lastDirection !== curDirection) {
-      lastDataSend = Date.now();
-      lastDirection = curDirection;
-      const serializedData = gameSharing.getThisData();
-      connection.send('data', serializedData);
-    }
-  });
-  setOnGameBeforeMainPlayerRender((self, [,,resolution]) => {
-    // Update + render other players
-    others.forEach(other => other.update());
-    others.forEach(other => other.render(resolution));
-  });
+  getLatency() {
+    return this.gameSharing.getLatency();
+  }
+
+  setup() {
+    this.gameSharing = createGameSharing();
+
+    // Setup communication
+    connection.on('connect', () => {
+      console.log('[GSM] Connected to the server!');
+      this.others.clear();
+      this.emit('others_changed', this.others);
+    });
+    connection.on('other_connect', ({id}) => {
+      console.log('[GSM] Other connect', id);
+      const other = this.gameSharing.createOther();
+      this.others.set(id, other);
+      this.emit('others_changed', this.others);
+    });
+    connection.on('other_disconnect', ({id}) => {
+      console.log('[GSM] Other disconnect', id);
+      this.others.delete(id);
+      this.emit('others_changed', this.others);
+    });
+    connection.on('other_data', ({id, data}) => {
+      const other = this.others.get(id);
+      if (!other) return;
+      other.updateData(data);
+    });
+    connection.on('latency', ({latency}) => {
+      this.gameSharing.updateLatency(latency);
+    });
+    connection.on('other_latency', ({id, latency}) => {
+      const other = this.others.get(id);
+      if (!other) return;
+      other.updateLatency(latency);
+      this.emit('others_changed', this.others);
+    });
+    
+    setOnGameBeforeBoardRender(() => {
+      // Send player data to others
+      const curDirection = gameInstanceSnake.direction;
+      if (this.lastDataSend === undefined || Date.now() - this.lastDataSend > 250 || this.lastDirection !== curDirection) {
+        this.lastDataSend = Date.now();
+        this.lastDirection = curDirection;
+        const serializedData = this.gameSharing.getThisData();
+        connection.send('data', serializedData);
+      }
+    });
+    setOnGameBeforeMainPlayerRender((self, [,,resolution]) => {
+      // Update + render other players
+      this.others.forEach(other => other.update());
+      this.others.forEach(other => other.render(resolution));
+    });
+  }
 }
+
+export const multiplayer = new Multiplayer();

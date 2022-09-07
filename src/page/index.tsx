@@ -1,10 +1,12 @@
 import React from 'react';
+import { CanvasOverlay } from './components/canvas-overlay';
 import { ExtraHeader } from './components/extra-header';
+import { canvasUIHook } from './game-hooks/canvas-ui-hook';
 import { setOnGameInitialize, setupGameLogicHooks } from './game-hooks/game-logic-hook';
-import { setupHeaderUIHooks } from './game-hooks/header-ui-hook';
-import { setupMultiplayer } from './multiplayer';
+import { headerUIHook } from './game-hooks/header-ui-hook';
+import { multiplayer } from './multiplayer';
 import { cleanup } from './utils/cleanup';
-import { setupSnakeLoop } from './utils/snake-loop';
+import { snakeLoop } from './utils/snake-loop';
 
 export async function pageLoadedEntry() {
   if (window.cleanup) window.cleanup();
@@ -15,9 +17,10 @@ export async function pageLoadedEntry() {
 
     setupGameLogicHooks();
     setOnGameInitialize(_ => {
-      setupHeaderUIHooks(<ExtraHeader></ExtraHeader>);
-      setupMultiplayer();
-      setupSnakeLoop();
+      headerUIHook.setup(<ExtraHeader></ExtraHeader>);
+      canvasUIHook.setup(<CanvasOverlay></CanvasOverlay>)
+      multiplayer.setup();
+      snakeLoop.setup();
     });
   }
 

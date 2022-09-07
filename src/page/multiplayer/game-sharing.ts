@@ -60,9 +60,11 @@ export function createGameSharing() {
       otherInstance.receivedData && otherInstance.update((Date.now() - otherInstance.latency));
     };
 
+    const getLatency = () => otherInstance.latency;
+
     console.log('[GSM] Other instance:', otherInstance);
 
-    return {updateData, updateLatency, render, update};
+    return {updateData, updateLatency, render, update, getLatency};
   };
 
   let oldObjs: any[] = [];
@@ -102,6 +104,8 @@ export function createGameSharing() {
   const updateLatency = (newLatency: number) => {
     latency = newLatency;
   };
+  
+  const getLatency = () => latency;
 
-  return {createOther, getThisData, updateLatency};
+  return {createOther, getThisData, updateLatency, getLatency};
 }
