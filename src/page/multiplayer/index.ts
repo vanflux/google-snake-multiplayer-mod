@@ -1,4 +1,4 @@
-import { gameInstance, gameInstanceCtx, setOnGameBeforeBoardRender, setOnGameBeforePlayerRender } from "../game-hooks/game-logic-hook";
+import { gameInstanceSnake, setOnGameBeforeBoardRender, setOnGameBeforeMainPlayerRender } from "../game-hooks/game-logic-hook";
 import { createGameSharing, OtherGameSharing } from "./game-sharing";
 import { connection } from "./connection";
 
@@ -39,7 +39,7 @@ export function setupMultiplayer() {
   
   setOnGameBeforeBoardRender(() => {
     // Send player data to others
-    const curDirection = gameInstanceCtx.direction;
+    const curDirection = gameInstanceSnake.direction;
     if (lastDataSend === undefined || Date.now() - lastDataSend > 250 || lastDirection !== curDirection) {
       lastDataSend = Date.now();
       lastDirection = curDirection;
@@ -47,8 +47,8 @@ export function setupMultiplayer() {
       connection.send('data', serializedData);
     }
   });
-  setOnGameBeforePlayerRender((_, [,,resolution]) => {
-    // Render other players
+  setOnGameBeforeMainPlayerRender((self, [,,resolution]) => {
+    // Update + render other players
     others.forEach(other => other.update());
     others.forEach(other => other.render(resolution));
   });

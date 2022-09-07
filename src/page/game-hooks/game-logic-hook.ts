@@ -17,9 +17,9 @@ export let GameInstance: Class;
 export let AssetRenderer: Class;
 
 export let gameInstance: any;
-export let gameInstanceCtx: any;
-export let gameInstanceCtxKey: any;
-export let gameInstanceCtxEyeColorKey: any;
+export let gameInstanceSnake: any;
+export let gameInstanceSnakeKey: any;
+export let gameInstanceSnakeEyeColorKey: any;
 export let gameInstanceMapObjectHolderKey: any;
 export let gameInstanceMapObjectHolderObjsKey: any;
 export let gameInstanceXaKey: any; // FIXME: good naming
@@ -32,11 +32,11 @@ export let changeAssetColor: any;
 
 let onGameInitialize: (lastBoardRenderCtx: any, boardRenderArgs: any)=>any;
 let onGameBeforeBoardRender: (boardRenderCtx: any, boardRenderArgs: any)=>any;
-let onGameBeforePlayerRender: (playerRenderCtx: any, playerRenderArgs: any)=>any;
+let onGameBeforeMainPlayerRender: (playerRenderCtx: any, playerRenderArgs: any)=>any;
 
 export const setOnGameInitialize = (handler: typeof onGameInitialize) => onGameInitialize = handler;
 export const setOnGameBeforeBoardRender = (handler: typeof onGameBeforeBoardRender) => onGameBeforeBoardRender = handler;
-export const setOnGameBeforePlayerRender = (handler: typeof onGameBeforePlayerRender) => onGameBeforePlayerRender = handler;
+export const setOnGameBeforeMainPlayerRender = (handler: typeof onGameBeforeMainPlayerRender) => onGameBeforeMainPlayerRender = handler;
 
 let initialized = false;
 let boardRenderStarted = false;
@@ -69,9 +69,9 @@ export function setupGameLogicHooks() {
       const instanceKey = findChildKeyInObject(this, x => x.ticks !== undefined && x.settings !== undefined && x.menu !== undefined);
       gameInstance = this[instanceKey];
       GameInstance = gameInstance.constructor;
-      gameInstanceCtxKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
-      gameInstanceCtx = gameInstance[gameInstanceCtxKey];
-      gameInstanceCtxEyeColorKey = findChildKeysInObject(gameInstanceCtx, x => typeof x === 'string' && !!x.match(/\#[a-fA-F0-9]{3,6}/))[0];
+      gameInstanceSnakeKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
+      gameInstanceSnake = gameInstance[gameInstanceSnakeKey];
+      gameInstanceSnakeEyeColorKey = findChildKeysInObject(gameInstanceSnake, x => typeof x === 'string' && !!x.match(/\#[a-fA-F0-9]{3,6}/))[0];
       gameInstanceMapObjectHolderKey = findChildKeyInObject(gameInstance, x => x instanceof MapObjectHolder);
       gameInstanceMapObjectHolderObjsKey = MapObjectHolder.prototype.shuffle.toString().match(/this\.(\w+)\.length/)?.[1];
       const xaSaRegex = new RegExp(`\\(\\w+\\-this\\.${instanceKey}\\.(\\w+)\\)\\/this\\.${instanceKey}\\.(\\w+)`);
@@ -101,9 +101,9 @@ export function setupGameLogicHooks() {
     if (boardRenderStarted) {
       boardRenderStarted = false;
       try {
-        onGameBeforePlayerRender?.(this, args)
+        onGameBeforeMainPlayerRender?.(this, args)
       } catch(exc) {
-        console.error('[GSM] Game before player render error:', exc);
+        console.error('[GSM] Game before main player render error:', exc);
       }
     }
   });

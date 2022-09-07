@@ -1,4 +1,4 @@
-import { AssetRenderer, changeAssetColor, gameInstance, GameInstance, gameInstanceClass1Key, gameInstanceCtxEyeColorKey, gameInstanceCtxKey, gameInstanceMapObjectHolderKey, gameInstanceMapObjectHolderObjsKey, gameInstanceSaKey, gameInstanceXaKey, Header, lastBoardRenderCtx, Menu, PlayerRenderer, Settings, Vector2 } from "../game-hooks/game-logic-hook";
+import { AssetRenderer, changeAssetColor, gameInstance, GameInstance, gameInstanceClass1Key, gameInstanceSnakeEyeColorKey, gameInstanceSnakeKey, gameInstanceMapObjectHolderKey, gameInstanceMapObjectHolderObjsKey, gameInstanceSaKey, gameInstanceXaKey, Header, lastBoardRenderCtx, Menu, PlayerRenderer, Settings, Vector2 } from "../game-hooks/game-logic-hook";
 import { findChildKeysInObject } from "../game-hooks/utils";
 import { buildSerializer } from "./serializer";
 import { ArrayMapper, ObjectMapper, SimpleMapper, Vector2Mapper } from "./serializer/mappers";
@@ -31,12 +31,12 @@ export function createGameSharing() {
       [gameInstanceClass1Key]: gameInstance[gameInstanceClass1Key], // A important class for rendering snake
       [gameInstanceMapObjectHolderKey]: gameInstance[gameInstanceMapObjectHolderKey], // By default, the map objects are shared between gameInstance and others
     });
-    const otherRenderer: any = new PlayerRenderer(otherInstance, settings, lastBoardRenderCtx[gameInstanceCtxKey]);
+    const otherRenderer: any = new PlayerRenderer(otherInstance, settings, lastBoardRenderCtx[gameInstanceSnakeKey]);
 
     const updateData = (serializedData: any) => {
-      const oldEyeColor = otherInstance?.[gameInstanceCtxKey]?.[gameInstanceCtxEyeColorKey];
+      const oldEyeColor = otherInstance?.[gameInstanceSnakeKey]?.[gameInstanceSnakeEyeColorKey];
       serializer.deserialize(serializedData, otherInstance); // This line is the CORE of update
-      const newEyeColor = otherInstance?.[gameInstanceCtxKey]?.[gameInstanceCtxEyeColorKey];
+      const newEyeColor = otherInstance?.[gameInstanceSnakeKey]?.[gameInstanceSnakeEyeColorKey];
       if (newEyeColor !== oldEyeColor) {
         // Regenerate all assets based on eye color
         findChildKeysInObject(otherRenderer, x => x instanceof AssetRenderer).forEach(key => {
