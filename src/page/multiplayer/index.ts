@@ -27,7 +27,6 @@ export function setupMultiplayer() {
     if (!other) return;
     other.updateData(data);
   });
-  connection.connect('ws', '127.0.0.1', 3512);
   
   setOnGameBeforeGameRender((_, [renderPart]) => {
     // Send player data to others
