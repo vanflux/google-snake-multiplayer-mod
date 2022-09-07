@@ -2,7 +2,7 @@ import React from 'react';
 import { addCleanupFn, cleanup } from "./cleanup";
 import { ExtraHeader } from './components/extra-header';
 import { createOtherGameInstance, getShareableGameInstance, renderOtherGameInstance } from "./game-instance-sharing";
-import { changeAssetColor, gameInstanceCtx, gameInstanceCtxEyeColorKey, gameInstanceCtxKey, setOnGameBeforeGameRender, setOnGameBeforePlayerRender, setOnGameInitialize, setupGame } from "./hooks/game-hook";
+import { AssetRenderer, changeAssetColor, gameInstanceCtx, gameInstanceCtxEyeColorKey, gameInstanceCtxKey, setOnGameBeforeGameRender, setOnGameBeforePlayerRender, setOnGameInitialize, setupGame } from "./hooks/game-hook";
 import { setupHeaderUI } from "./hooks/header-ui-hook";
 import { ArrayMapper } from './serializers/mappers/array-mapper';
 import { ObjectMapper } from './serializers/mappers/object-mapper';
@@ -10,6 +10,7 @@ import { SimpleMapper } from './serializers/mappers/simple-mapper';
 import { Vector2Mapper } from './serializers/mappers/vector2-mapper';
 import { buildVfSerializer, VFSerializer } from './serializers/vf-serializer';
 import { setupSocket, socket } from "./socket";
+import { findChildKeysInObject } from './utils';
 
 export async function pageLoadedEntry() {
   if (window.cleanup) window.cleanup();
@@ -44,7 +45,7 @@ export async function pageLoadedEntry() {
     let serializer: VFSerializer;
 
     setupGame();
-    setOnGameInitialize(gameRenderCtx => {
+    setOnGameInitialize(_ => {
       addCleanupFn(runInLoop());
 
       serializer = buildVfSerializer([
@@ -56,14 +57,6 @@ export async function pageLoadedEntry() {
       
       // Setup ui hooks
       setupHeaderUI(<ExtraHeader></ExtraHeader>);
-
-      /*console.log('------------------------');
-      const serializedResult = serializer.serialize(gameInstance);
-      console.log('[GSM] Serialized result', serializedResult.data, serializedResult.skipped);
-      const out = {};
-      const deserializedResult = serializer.deserialize(serializedResult.data, out);
-      console.log('[GSM] Deserialized result', deserializedResult.data, deserializedResult.skipped);
-      console.log('------------------------');*/
 
       // Setup communication
       setupSocket();
@@ -83,26 +76,30 @@ export async function pageLoadedEntry() {
       socket.on('other_data', ({id, data: serializedData}) => {
         const other = others.get(id);
         if (!other) return;
+
+        // Deserialize and checks if snake eye color has changed
+        // If the color changes we need to regenerate assets
         const oldEyeColor = other.otherInstance?.[gameInstanceCtxKey]?.[gameInstanceCtxEyeColorKey];
         serializer.deserialize(serializedData, other.otherInstance);
         const newEyeColor = other.otherInstance?.[gameInstanceCtxKey]?.[gameInstanceCtxEyeColorKey];
         if (newEyeColor !== oldEyeColor) {
-          console.log(other.otherRenderer.La.constructor.name)
-          //changeAssetColor(other.otherRenderer.La, '#5282F2', newEyeColor); // FIXME: Change La and wa to dynamic assetRenderer
-          //changeAssetColor(other.otherRenderer.wa, '#5282F2', newEyeColor);
+          // Regenerate all assets based on eye color
+          findChildKeysInObject(other.otherRenderer, x => x instanceof AssetRenderer).forEach(key => {
+            changeAssetColor(other.otherRenderer[key], '#5282F2', newEyeColor);
+          });
         }
       });
     });
-    setOnGameBeforeGameRender((gameRenderCtx, [renderPart]) => {
+    setOnGameBeforeGameRender((_, [renderPart]) => {
+      // Send player data to others
       try {
         if (lastDataSend === undefined || Date.now() - lastDataSend > 20) {
           const serializedResult = serializer.serialize(getShareableGameInstance(renderPart));
           bytesSent += JSON.stringify(serializedResult.data).length;
           if (Date.now() - bytesSentStartTime >= 1000) {
-            //console.log('Bytes sent:', bytesSent);
+            console.log('Bytes sent:', bytesSent);
             bytesSentStartTime = Date.now();
-            bytesSent = 0; // FIXME: Bizarre amount of data being transmited on the network
-                           // also it takes a lot of time to deserialize on the clients
+            bytesSent = 0;
           }
           socket.emit('data', serializedResult.data);
           lastDataSend = Date.now();
@@ -111,7 +108,8 @@ export async function pageLoadedEntry() {
         console.error('[GSM] Game before game render error', exc);
       }
     });
-    setOnGameBeforePlayerRender((playerRenderCtx, [,,resolution]) => {
+    setOnGameBeforePlayerRender((_, [,,resolution]) => {
+      // Render other players
       others.forEach(({otherRenderer, otherInstance}) => {
         try {
           renderOtherGameInstance(otherRenderer, otherInstance, resolution);

@@ -1,6 +1,8 @@
 import { addCleanupFn } from "../cleanup";
 import { Class, detour, findChildKeyInObject, findChildKeysInObject, findClassByMethod } from "../utils";
 
+// This entire file is bizarre, it makes all necessary hooks to the game
+
 export let Vector2: Class;
 export let GameRenderer: Class;
 export let PlayerRenderer: Class;
@@ -50,16 +52,6 @@ export function setupGame() {
 
   const end = Date.now();
   console.log('[GSM] Game hooks class by function took', end-start, 'ms');
-
-  /*console.log('Vector2 class:', Vector2.name);
-  console.log('GameRenderer class:', GameRenderer.name);
-  console.log('PlayerRenderer class:', PlayerRenderer.name);
-  console.log('Settings class:', Settings.name);
-  console.log('Menu class:', Menu.name);
-  console.log('Header class:', Header.name);
-  console.log('MapObjectHolder class:', MapObjectHolder.name);
-  console.log('SnakeBodyConfig class:', SnakeBodyConfig.name);
-  console.log('GameClass1 class:', GameClass1.name);*/
 
   const revertOnGameRenderDetour = detour(GameRenderer.prototype, 'render', function (...args: any) {
     gameRenderStarted = true;
