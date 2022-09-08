@@ -16,7 +16,7 @@ This mod tries to make the multiplayer experience to be the smoothest as possibl
 
 If you already has a server to connect go to [Browser Setup](#browser-setup), if not you will need to host your own([Server Setup](#server-setup));
 
-### Server setup
+### Server
 
 - Install Node 16
 - Clone repository: `git clone git@github.com:vanflux/google-snake-multiplayer-mod.git`
@@ -24,13 +24,15 @@ If you already has a server to connect go to [Browser Setup](#browser-setup), if
 - Install dependencies: `npm i`
 - Run server: `npm run server`
 
-### Browser setup
+### Browser
 
-- Copy the code of the `gsm-mod.js` file from the [latest release](https://github.com/vanflux/google-snake-multiplayer-mod/releases).
-- Search for `snake game` on google
-- Open console with right click and select `inspect element`
-- Paste the code on console and hit enter
-- If you are **NOT** connecting to "localhost" or "127.0.0.1" you will need to do the following to disable secure content:
+- Download the `gsm-bookmark.html` file from the [latest release](https://github.com/vanflux/google-snake-multiplayer-mod/releases)
+- Open `chrome://bookmarks/` on google chrome (sorry, firefox is not supported now)
+- At the top on the right, click on the three-dots icon > `Import bookmarks` > select the downloaded `gsm-bookmark.html` file
+- Open snake game
+- At the top on the right, click on the three-dots icon > Bookmarks > GSM Mod
+- Enjoy
+- **EXTRA**: If you are **NOT** connecting to "localhost" or "127.0.0.1" you will need to do the following to disable secure content:
 
 ![Insecure content step 1](docs/images/insecure-content-1.png)
 ![Insecure content step 2](docs/images/insecure-content-2.png)
