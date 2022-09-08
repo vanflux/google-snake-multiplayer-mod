@@ -6,9 +6,10 @@ export function findClassByMethod(
   const res = Object.entries<any>(window)
     .flatMap(([k, v]) => {
       try {
-        return Object.entries<any>(v.prototype)
-          .filter(([sK, sV]) => {
-            return sK.match(name) && sV.length === paramCount && fn(sV.toString());
+        return Object.getOwnPropertyNames(v.prototype)
+          .filter(sK => {
+            if (sK === 'constructor') return;
+            return sK.match(name) && v.prototype[sK].length === paramCount && fn(v.prototype[sK].toString());
           })
           .map((x) => window[k as any]);
       } catch {}
@@ -26,28 +27,21 @@ export function findClassByMethod(
   return res[0];
 }
 
-export function findChildKeyInObject(obj: any, fn: (child: any) => boolean) {
-  const res = Object.entries<any>(obj).filter(([k, v]) => {
+export function findChildKeysInObject(obj: any, fn: (child: any) => boolean) {
+  return Object.getOwnPropertyNames(obj).filter(k => {
+    if (k === 'constructor') return;
     try {
-      return fn(v);
+      return fn(obj[k]);
     } catch {}
   });
-  if (res.length < 1)
-    throw new Error(`No child found for: ${obj} ${fn.toString()}.`);
-  if (res.length > 1)
-    throw new Error(
-      `More than 1 child was found for: ${obj} ${fn.toString()}.`
-    );
-  return res[0][0];
 }
 
-export function findChildKeysInObject(obj: any, fn: (child: any) => boolean) {
-  const res = Object.entries<any>(obj).filter(([k, v]) => {
-    try {
-      return fn(v);
-    } catch {}
-  });
-  return res.map(x => x[0]);
+export function findChildKeyInObject(obj: any, fn: (child: any) => boolean) {
+  const keys = findChildKeysInObject(obj, fn);
+  if (keys.length > 1) throw new Error(
+    `More than 1 child was found for: ${obj} ${fn.toString()}.`
+  );
+  return keys[0];
 }
 
 export function detour(
