@@ -6,6 +6,8 @@ Easy usage, only paste code on console (and disable secure content if you are co
 
 This project uses [vf-ext](https://github.com/vanflux/vf-ext) to create browser extensions(only development). If you want to create extensions like this, take a look.
 
+This mod tries to make the multiplayer experience to be the smoothest as possible and not network destroyer by not predicting, but interpolating from backwards to the current player state, it implies in you always seeing the other players with their `ping * 2`, what is not a big deal here, but hmm.
+
 ## Demo
 
 ![Demo gif](docs/gifs/demo.gif)
@@ -41,3 +43,9 @@ If you already has a server to connect go to [Browser Setup](#browser-setup), if
 - Run browser code as an auto reload extension: `npm start <chrome/firefox>`
 - Load the extension located on `build/dev` on your browser
 - Run server with `npm run server`
+
+## Problems/improvements
+
+- Each player sends around 5 data objects to the server per second, each data object is around 1.5kB. If you have 2 players playing for an hour on the server, the outgoing and the incoming network is estimated on 54MB. Which stills pretty big for this game. It can be improved by serializing only the differences of the game instance, not the "entire" object, but it is NOT implemented at this point.
+
+- The foods are being shared, but sometimes flickering occurs, maybe implement this logic on server-side? Or electing a client to be leader responsible for generation this? The second solution is terrible for hackers(I think it isnt a deal here), but is the most easy and problem-free.
