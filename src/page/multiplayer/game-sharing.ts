@@ -43,7 +43,7 @@ export function createGameSharing() {
           changeAssetColor(otherRenderer[key], '#5282F2', newEyeColor);
         });
       }
-      //checkObjsChanged();
+      checkObjsChanged();
       otherInstance.receivedData = true;
     };
 

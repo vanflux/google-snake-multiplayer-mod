@@ -8,8 +8,8 @@ export function CanvasOverlay() {
 
   useEffect(() => {
     multiplayer.on('others_changed', (others: Map<string, OtherGameSharing>) => {
-      const myItem = `My latency: ${Math.floor(multiplayer.getLatency() / 2)}ms`
-      const othersList = [...others.values()].map(x => `Other latency: ${Math.floor(x.getLatency())}ms`);
+      const myItem = `Latency to server: ${Math.floor(multiplayer.getLatency() / 2)}ms`
+      const othersList = [...others.values()].map((other, i) => `Total latency to player ${i+1}: ${Math.floor(other.getLatency())}ms`);
       setList([myItem, ...othersList]);
     })
   }, []);
