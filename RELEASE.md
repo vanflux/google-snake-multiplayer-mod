@@ -1,7 +1,7 @@
 Version $VERSION released! 🥳
 
 Changes:
-- Github workflow build with version.
+- Fix on class finding, finding js classes!
 
 Features:
 - Multiplayer support!
