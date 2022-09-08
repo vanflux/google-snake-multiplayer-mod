@@ -24,7 +24,7 @@ If you already has a server to connect go to [Browser Setup](#browser-setup), if
 
 ### Browser setup
 
-- Copy the code of the latest release [HERE](wait a sec).
+- Copy the code of the `gsm-mod.js` file from the [latest release](https://github.com/vanflux/google-snake-multiplayer-mod/releases).
 - Search for `snake game` on google
 - Open console with right click and select `inspect element`
 - Paste the code on console and hit enter
