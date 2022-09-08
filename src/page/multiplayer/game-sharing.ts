@@ -90,7 +90,9 @@ export function createGameSharing() {
   const getThisData = () => {
     const data = {
       // Send game instance
-      ...gameInstance,
+      [gameInstanceXaKey]: gameInstance[gameInstanceXaKey],
+      [gameInstanceSnakeKey]: gameInstance[gameInstanceSnakeKey],
+      Ej: gameInstance.Ej, // Head state
 
       // Conditionally send map objects (only if changed)
       [gameInstanceMapObjectHolderKey]: checkObjsChanged() ? {

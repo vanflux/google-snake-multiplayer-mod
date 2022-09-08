@@ -1,5 +1,5 @@
 import { addCleanupFn } from "../utils/cleanup";
-import { Class, detour, findChildKeyInObject, findChildKeysInObject, findClassByMethod } from "./utils";
+import { Class, detour, findChildKeyInObject, findChildKeysInObject, findClassByMethod, obfuscationHelper } from "./utils";
 
 // This entire file is bizarre, it makes all necessary hooks to the game
 
@@ -82,6 +82,12 @@ export function setupGameLogicHooks() {
       changeAssetColorKey = findChildKeyInObject(window, x => typeof x === 'function' && x.toString().includes('.getImageData(0,0'));
       changeAssetColor = window[changeAssetColorKey];
       
+      console.log('[GSM] gameInstanceSnakeKey:', gameInstanceSnakeKey);
+      console.log('[GSM] gameInstanceMapObjectHolderKey:', gameInstanceMapObjectHolderKey);
+      console.log('[GSM] gameInstanceClass1Key:', gameInstanceClass1Key);
+      console.log('[GSM] gameInstanceXaKey:', gameInstanceXaKey);
+      console.log('[GSM] gameInstanceSaKey:', gameInstanceSaKey);
+
       console.log('[GSM] Game instance:', gameInstance);
 
       try {
