@@ -1,5 +1,8 @@
 Version $VERSION released! 🥳
 
+Changes:
+- Github workflow build with version.
+
 Features:
 - Multiplayer support!
 - Shared snakes!

@@ -15,13 +15,15 @@ jobs:
           node-version: 16
       - name: Install dependencies
         run: npm i
-      - name: Build
-        run: npm run build
-      - name: Prepare mod artifact
-        run: mv build/prod/chrome/raw/page.js gsm-mod.js
       - name: Get version number
         id: vars
         run: echo ::set-output name=version::${GITHUB_REF_NAME##*/}
+      - name: Build
+        run: npm run build
+        env:
+          VERSION: ${{ steps.vars.outputs.version }}
+      - name: Prepare mod artifact
+        run: mv build/prod/chrome/raw/page.js gsm-mod.js
       - name: Build RELEASE_final.md
         run: envsubst < RELEASE.md > RELEASE_final.md
         env:
