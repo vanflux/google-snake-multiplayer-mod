@@ -42,7 +42,7 @@ export function ExtraHeader() {
 
   return <div className={styles.container}>
     <div className={styles.col}>
-      <span className={styles.title}>MULTIPLAYER MOD</span>
+      <span className={styles.title}>MULTIPLAYER MOD v{VERSION}</span>
       <span className={styles.author}>by vanflux</span>
       <span className={connected ? styles.connected : styles.connecting}>{connected ? 'Connected' : 'Connecting...'}</span>
     </div>
