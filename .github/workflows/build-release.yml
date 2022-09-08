@@ -1,0 +1,36 @@
+name: Build and Release Action
+on:
+  push:
+    branches:
+      - 'release/**'
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install dependencies
+        run: npm i
+      - name: Build
+        run: npm run build
+      - name: Prepare mod artifact
+        run: mv build/prod/chrome/raw/page.js gsm-mod.js
+      - name: Get version number
+        id: vars
+        run: echo ::set-output name=version::${GITHUB_REF_NAME##*/}
+      - name: Build RELEASE_final.md
+        run: envsubst < RELEASE.md > RELEASE_final.md
+        env:
+          VERSION: ${{ steps.vars.outputs.version }}
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "gsm-mod.js"
+          tag: v${{ steps.vars.outputs.version }}
+          name: Release ${{ steps.vars.outputs.version }}
+          bodyFile: RELEASE_final.md
+          token: ${{ secrets.GITHUB_TOKEN }}
