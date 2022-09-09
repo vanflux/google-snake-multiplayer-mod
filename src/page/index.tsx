@@ -20,38 +20,51 @@ export async function pageLoadedEntry() {
     const start = Date.now();
 
     try {
-      const DGameEngine = obfuscationHelper.findMethod(x => x.matchRawName('render') && x.hasParamCount(2) && x.contains(/"visible":"hidden"/) && x.contains(/\.render\(a,b\)/)).parent();
-      const GameEngine = DGameEngine.get();
+      obfuscationHelper
+      .findMethod('render', 2, [/"visible":"hidden"/, /\.render\(a,b\)/]).parent().setName('GameEngine')
+      .findMethod('render').setName('render').parent()
+      .link();
       
-      const DVector2 = obfuscationHelper.findMethod(x => x.matchRawName('clone') && x.hasParamCount(0) && x.contains(/\(this\.x,this\.y\)/)).parent();
-      const Vector2 = DVector2.get();
+      obfuscationHelper
+      .findMethod('clone', 0, [/\(this\.x,this\.y\)/]).parent().setName('Vector2')
+      .link();
       
-      const DBoardRenderer = obfuscationHelper.findMethod(x => x.matchRawName('render') && x.hasParamCount(2) && x.contains(/this\.context\.fillRect\(0,0,this\.context\.canvas\.width,this\.context\.canvas\.height\);/)).parent();
-      const BoardRenderer = DBoardRenderer.get();
+      obfuscationHelper
+      .findMethod('render', 2, [/this\.context\.fillRect\(0,0,this\.context\.canvas\.width,this\.context\.canvas\.height\);/]).parent().setName('BoardRenderer')
+      .link();
       
-      const DPlayerRenderer = obfuscationHelper.findMethod(x => x.matchRawName('render') && x.hasParamCount(3) && x.contains(/RIGHT/) && x.contains(/DOWN/)).parent();
-      const PlayerRenderer = DPlayerRenderer.get();
+      obfuscationHelper
+      .findMethod('render', 3, [/RIGHT/, /DOWN/]).parent().setName('PlayerRenderer')
+      .link();
       
-      const DSettings = obfuscationHelper.findMethod(x => x.matchRawName('toString') && x.hasParamCount(0) && x.contains(/v=10,color=/)).parent();
-      const Settings = DSettings.get();
+      obfuscationHelper
+      .findMethod('toString', 0, [/v=10,color=/]).parent().setName('Settings')
+      .link();
       
-      const DMenu = obfuscationHelper.findMethod(x => x.matchRawName('update') && x.hasParamCount(0) && x.contains(/this\.isVisible\(\)/) && x.contains(/settings/)).parent();
-      const Menu = DMenu.get();
+      obfuscationHelper
+      .findMethod('update', 0, [/this\.isVisible\(\)/, /settings/]).parent()
+      .setName('Menu')
+      .link();
+
+      obfuscationHelper
+      .findMethod(/.*/, 1, [/images\/icons\/material/]).parent().setName('Header')
+      .link();
       
-      const DHeader = obfuscationHelper.findMethod(x => x.matchRawName(/.*/) && x.hasParamCount(1) && x.contains(/images\/icons\/material/)).parent();
-      const Header = DHeader.get();
+      obfuscationHelper
+      .findMethod('shuffle', 1, []).parent().setName('MapObjectHolder')
+      .link();
       
-      const DMapObjectHolder = obfuscationHelper.findMethod(x => x.matchRawName('shuffle') && x.hasParamCount(1)).parent();
-      const MapObjectHolder = DMapObjectHolder.get();
+      obfuscationHelper
+      .findMethod('reset', 0, [/"RIGHT"/, /this\.direction/, /\.push\(new/]).parent().setName('SnakeBodyConfig')
+      .link();
       
-      const DSnakeBodyConfig = obfuscationHelper.findMethod(x => x.matchRawName('reset') && x.hasParamCount(0) && x.contains(/"RIGHT"/) && x.contains(/this\.direction/) && x.contains(/\.push\(new/)).parent();
-      const SnakeBodyConfig = DSnakeBodyConfig.get();
+      obfuscationHelper
+      .findMethod('reset', 0, [/\.push\(\[\]\)/, new RegExp(`new ${Vector2.name}\\(0,0\\)`)]).parent().setName('GameClass1')
+      .link();
       
-      const DGameClass1 = obfuscationHelper.findMethod(x => x.matchRawName('reset') && x.hasParamCount(0) && x.contains(/\.push\(\[\]\)/) && x.contains(new RegExp(`new ${Vector2.name}\\(0,0\\)`))).parent();
-      const GameClass1 = DGameClass1.get();
-      
-      const DAssetRenderer = obfuscationHelper.findMethod(x => x.matchRawName('render') && x.hasParamCount(5) && x.contains(/this\.context\.drawImage/) && x.contains(/this\.context\.translate/) && x.contains(/this\.context\.rotate/)).parent();
-      const AssetRenderer = DAssetRenderer.get();
+      obfuscationHelper
+      .findMethod('render', 5, [/this\.context\.drawImage/, /this\.context\.translate/, /this\.context\.rotate/]).parent().setName('AssetRenderer')
+      .link();
     } 
     catch (exc) {
       console.error(exc);

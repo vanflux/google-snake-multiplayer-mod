@@ -1,7 +1,8 @@
 class ObfuscationClass {
+  private name?: string;
+
   constructor(
     private rawName: string,
-    private name: string,
     private jsObj: Class,
     private methods: ObfuscationMethod[],
   ) {}
@@ -14,23 +15,50 @@ class ObfuscationClass {
     return this.name;
   }
 
+  public getMethods() {
+    return this.methods;
+  }
+
+  public setName(name: string) {
+    this.name = name;
+    return this;
+  }
+
   public get() {
     return this.jsObj;
   }
 
-  public findMethod(fn: (method: ObfuscationMethod) => boolean) {
-    const methods = this.methods.filter(fn);
+  public findMethod(
+    rawName: string | RegExp,
+    paramCount?: number,
+    containList: RegExp[] = [],
+  ) {
+    const methods = this.methods.filter(x => x.getRawName().match(rawName) && (paramCount === undefined || x.getParamCount() === paramCount) && containList.every(y => x.contains(y)));
+    if (methods.length === 0) throw new Error('No methods was found on class!');
     if (methods.length > 1) throw new Error('More than 1 method was found on class!');
     return methods[0];
   }
 
-
+  public link() {
+    if (this.getName() === undefined) return;
+    console.log('[GSM] Obfuscation Helper Linking "' + this.getRawName() + '" class as "' + this.getName() + '"');
+    const obj: any = this.get();
+    for (const method of this.methods) {
+      if (method.getName() === undefined) continue;
+      console.log('[GSM] Obfuscation Helper Linking "' + this.getRawName() + '.' + method.getRawName() + '" method as "' + method.getRawName() + '" as "' + method.getName() + '"');
+      obj.prototype[method.getName()!] = obj.prototype[method.getRawName()];
+    }
+    window[this.getName() as any] = obj;
+    
+    // FIXME: Create classes prototype fields with name linked to rawName (a getter to rawName and setter to rawName)
+  }
 }
 
 class ObfuscationMethod {
+  private name?: string;
+
   constructor(
     private rawName: string,
-    private name: string,
     private paramCount: number,
     private parentClass: ObfuscationClass,
     private code: string,
@@ -49,20 +77,13 @@ class ObfuscationMethod {
     return this.paramCount;
   }
 
-  public matchRawName(rawName: string | RegExp) {
-    return !!this.rawName.match(rawName);
-  }
-
-  public matchName(name: string | RegExp) {
-    return !!this.name.match(name);
-  }
-
-  public hasParamCount(paramCount: number) {
-    return this.paramCount === paramCount;
-  }
-
   public parent() {
     return this.parentClass;
+  }
+
+  public setName(name: string) {
+    this.name = name;
+    return this;
   }
 
   public get() {
@@ -93,13 +114,16 @@ class ObfuscationHelper {
           if (typeof obj === 'function' || (typeof obj === 'object' && obj !== null)) {
             if (typeof obj.prototype === 'object') {
               const methods: ObfuscationMethod[] = [];
-              const clazz = new ObfuscationClass(key, '', obj, methods);
+              const clazz = new ObfuscationClass(key, obj, methods);
+              const alreadyReadMethods = new Set();
               for (const subKey of Object.getOwnPropertyNames(obj.prototype)) {
                 if (subKey === 'constructor') continue;
                 try {
                   const fn = obj.prototype[subKey];
                   if (typeof fn === 'function') {
-                    methods.push(new ObfuscationMethod(subKey, '', fn.length, clazz, fn.toString(), fn));
+                    if (alreadyReadMethods.has(fn)) continue;
+                    alreadyReadMethods.add(fn);
+                    methods.push(new ObfuscationMethod(subKey, fn.length, clazz, fn.toString(), fn));
                   }
                 } catch {}
               }
@@ -115,16 +139,15 @@ class ObfuscationHelper {
     }
   }
 
-  public findMethod(fn: (method: ObfuscationMethod) => boolean) {
-    const methods = this.classes.map(clazz => clazz.findMethod(fn)).filter(Boolean);
-    if (methods.length > 1) throw new Error('More than 1 method was found on all classes! Raw Class Names: ' + methods.map(x => x.getRawName()).join(', '));
+  public findMethod(
+    rawName: string | RegExp,
+    paramCount: number,
+    containList: RegExp[],
+  ) {
+    const methods = this.classes.flatMap(c => c.getMethods().filter(x => x.getRawName().match(rawName) && x.getParamCount() === paramCount && containList.every(y => x.contains(y)))).filter(Boolean);
+    if (methods.length === 0) throw new Error('No methods was found on class!');
+    if (methods.length > 1) throw new Error('More than 1 method was found on class!');
     return methods[0];
-  }
-
-  public deobfuscate() {
-    // FIXME: Create functions with name linked to rawName ()
-    // FIXME: Create classes with name linked to rawName (window.{name} = window.{rawName})
-    // FIXME: Create classes prototype fields with name linked to rawName (a getter to rawName and setter to rawName)
   }
 }
 
@@ -204,5 +227,3 @@ export function extractSubObject(obj: any, keys: string[], transform: (...args: 
   for (const key of keys) newObj[key] = transform(obj[key]);
   return newObj;
 }
-
-export type Class = { new(...args: any[]): any; };

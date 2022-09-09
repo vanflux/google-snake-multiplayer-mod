@@ -1,5 +1,5 @@
 import { addCleanupFn } from "../utils/cleanup";
-import { Class, detour, findChildKeyInObject, findChildKeysInObject, findClassByMethod, obfuscationHelper } from "./utils";
+import { detour, findChildKeyInObject, findChildKeysInObject, findClassByMethod, obfuscationHelper } from "./utils";
 
 // This entire file is bizarre, it makes all necessary hooks to the game
 
