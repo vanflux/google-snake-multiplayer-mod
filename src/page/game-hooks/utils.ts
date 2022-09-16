@@ -278,10 +278,11 @@ class ObfuscationHelper {
 
   public findFunction(
     rawName: string | RegExp,
-    paramCount: number,
+    paramCount: number|number[],
     containList: RegExp[],
   ) {
-    const functions = this.functions.filter(x => x.getRawName().match(rawName) && x.getParamCount() === paramCount && containList.every(y => x.contains(y)));
+    if (!Array.isArray(paramCount)) paramCount = [paramCount];
+    const functions = this.functions.filter(x => x.getRawName().match(rawName) && (paramCount as number[]).includes(x.getParamCount()) && containList.every(y => x.contains(y)));
     if (functions.length === 0) throw new Error('No functions were found on class!');
     if (functions.length > 1) throw new Error('More than 1 function was found on class!');
     return functions[0];
@@ -289,35 +290,6 @@ class ObfuscationHelper {
 }
 
 export const obfuscationHelper = new ObfuscationHelper();
-
-export function findClassByMethod(
-  name: string | RegExp,
-  paramCount: number,
-  fn: (body: string) => boolean
-): any {
-  const res = Object.entries<any>(window)
-    .flatMap(([k, v]) => {
-      try {
-        return Object.getOwnPropertyNames(v.prototype)
-          .filter(sK => {
-            if (sK === 'constructor') return;
-            return sK.match(name) && v.prototype[sK].length === paramCount && fn(v.prototype[sK].toString());
-          })
-          .map((x) => window[k as any]);
-      } catch {}
-      return [];
-    })
-    .filter((x) => x.length > 0);
-  if (res.length < 1)
-    throw new Error(
-      `No methods found for: ${name} ${paramCount} ${fn.toString()}.`
-    );
-  if (res.length > 1)
-    throw new Error(
-      `More than 1 method was found for: ${name} ${paramCount} ${fn.toString()}.`
-    );
-  return res[0];
-}
 
 export function findChildKeysInObject(obj: any, fn: (child: any) => boolean) {
   return Object.getOwnPropertyNames(obj).filter(k => {

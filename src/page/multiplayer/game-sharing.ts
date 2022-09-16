@@ -101,6 +101,9 @@ export function createGameSharing() {
         deathHeadState: gameInstance.snakeBodyConfig.deathHeadState, // Death head state
         color1: gameInstance.snakeBodyConfig.color1, // Snake color 1
         color2: gameInstance.snakeBodyConfig.color2, // Snake color 2
+        settings: {
+          //oa: 10,
+        },
       },
       headState: gameInstance.headState,
 

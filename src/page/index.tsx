@@ -4,7 +4,7 @@ import { ExtraHeader } from './components/extra-header';
 import { canvasUIHook } from './game-hooks/canvas-ui-hook';
 import { setOnGameInitialize, setupGameLogicHooks } from './game-hooks/game-logic-hook';
 import { headerUIHook } from './game-hooks/header-ui-hook';
-import { findClassByMethod, obfuscationHelper } from './game-hooks/utils';
+import { obfuscationHelper } from './game-hooks/utils';
 import { multiplayer } from './multiplayer';
 import { cleanup } from './utils/cleanup';
 import { snakeLoop } from './utils/snake-loop';
