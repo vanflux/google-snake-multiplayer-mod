@@ -5,6 +5,8 @@ class ObfuscationClass {
     private rawName: string,
     private jsObj: Class,
     private methods: ObfuscationMethod[],
+    private fields: ObfuscationField[],
+    private code: string,
   ) {}
 
   public getRawName() {
@@ -39,14 +41,32 @@ class ObfuscationClass {
     return methods[0];
   }
 
+  public findField(
+    regex: RegExp,
+  ) {
+    let matches = this.code.match(regex);
+    if (!matches && typeof this.jsObj === 'function') {
+      for (const method of this.methods) {
+        matches = method.getCode().match(regex);
+        if (matches) break;
+      }
+    }
+    if (!matches) throw new Error(`No matches were found on class using regex "${regex.toString()}"!`);
+    if (matches.length < 2) throw new Error(`Find field regex must contain at least 1 group "${regex.toString()}"!`);
+    const rawName = matches[1];
+    if (this.fields.find(x => x.getRawName() === rawName)) throw new Error(`Found a duplicated field rawName using regex "${regex.toString()}"!`);
+    const field = new ObfuscationField(rawName, this);
+    this.fields.push(field);
+    return field;
+  }
+
   public link() {
     if (this.getName() === undefined) return;
     console.log('[GSM] Obfuscation Helper Linking "' + this.getRawName() + '" class as "' + this.getName() + '"');
     const obj: any = this.get();
     window[this.getName() as any] = obj;
     for (const method of this.methods) method.link();
-    
-    // FIXME: Create classes prototype fields with name linked to rawName (a getter to rawName and setter to rawName)
+    for (const field of this.fields) field.link();
   }
 }
 
@@ -77,6 +97,10 @@ class ObfuscationMethod {
     return this.parentClass;
   }
 
+  public getCode() {
+    return this.code;
+  }
+
   public setName(name: string) {
     this.name = name;
     return this;
@@ -102,6 +126,48 @@ class ObfuscationMethod {
   }
 }
 
+class ObfuscationField {
+  private name?: string;
+
+
+  public getRawName() {
+    return this.rawName;
+  }
+
+  public getName() {
+    return this.name;
+  }
+
+  public parent() {
+    return this.parentClass;
+  }
+
+  public setName(name: string) {
+    this.name = name;
+    return this;
+  }
+
+  constructor(
+    private rawName: string,
+    private parentClass: ObfuscationClass,
+  ) {}
+
+  
+  public link() {
+    if (this.getName() === undefined) return;
+    console.log('[GSM] Obfuscation Helper Linking "' + this.parent().getRawName() + '.' + this.getRawName() + '" field as "' + this.getRawName() + '" as "' + this.getName() + '"');
+    const obj = this.parent().get();
+    const self = this;
+    Object.defineProperties(obj.prototype, {
+      [this.name!]: {
+        get: function () { return this[self.rawName] },
+        set: function (value) { return this[self.rawName] = value },
+        configurable: true,
+      },
+    });
+  }
+}
+
 class ObfuscationHelper {
   private classes!: ObfuscationClass[];
   
@@ -117,7 +183,9 @@ class ObfuscationHelper {
           if (typeof obj === 'function' || (typeof obj === 'object' && obj !== null)) {
             if (typeof obj.prototype === 'object') {
               const methods: ObfuscationMethod[] = [];
-              const clazz = new ObfuscationClass(key, obj, methods);
+              const fields: ObfuscationField[] = [];
+              const code = obj.toString();
+              const clazz = new ObfuscationClass(key, obj, methods, fields, code);
               const alreadyReadMethods = new Set();
               for (const subKey of Object.getOwnPropertyNames(obj.prototype)) {
                 if (subKey === 'constructor') continue;

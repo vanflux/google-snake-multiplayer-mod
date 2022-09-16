@@ -14,16 +14,20 @@ export async function pageLoadedEntry() {
   window.cleanup = cleanup;
 
   function main() {
-    console.log('[GSM] Starting...');
+    try {
+      console.log('[GSM] Starting...');
 
-    obfuscationHelper.setup();
-    setupGameLogicHooks();
-    setOnGameInitialize(_ => {
-      headerUIHook.setup(<ExtraHeader></ExtraHeader>);
-      canvasUIHook.setup(<CanvasOverlay></CanvasOverlay>)
-      multiplayer.setup();
-      snakeLoop.setup();
-    });
+      obfuscationHelper.setup();
+      setupGameLogicHooks();
+      setOnGameInitialize(_ => {
+        headerUIHook.setup(<ExtraHeader></ExtraHeader>);
+        canvasUIHook.setup(<CanvasOverlay></CanvasOverlay>)
+        multiplayer.setup();
+        snakeLoop.setup();
+      });
+    } catch (exc) {
+      console.error('[GSM] Main error:', exc);
+    }
   }
 
   main();

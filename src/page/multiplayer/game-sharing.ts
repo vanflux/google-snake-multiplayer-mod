@@ -1,4 +1,4 @@
-import { changeAssetColor, gameInstance, gameInstanceClass1Key, gameInstanceSnakeEyeColorKey, gameInstanceSnakeKey, gameInstanceMapObjectHolderKey, gameInstanceMapObjectHolderObjsKey, gameInstanceSaKey, gameInstanceXaKey, lastBoardRenderCtx } from "../game-hooks/game-logic-hook";
+import { changeAssetColor, gameInstance, gameInstanceClass1Key, gameInstanceSnakeEyeColorKey, gameInstanceSnakeKey, gameInstanceMapObjectHolderKey, gameInstanceMapObjectHolderObjsKey, lastBoardRenderCtx } from "../game-hooks/game-logic-hook";
 import { findChildKeysInObject } from "../game-hooks/utils";
 import { buildSerializer } from "./serializer";
 import { ArrayMapper, ObjectMapper, SimpleMapper, Vector2Mapper } from "./serializer/mappers";
@@ -52,7 +52,7 @@ export function createGameSharing() {
     };
     
     const render = (resolution: any) => {
-      const renderPart = ((Date.now() - otherInstance.latency) - otherInstance[gameInstanceXaKey]) / otherInstance[gameInstanceSaKey];
+      const renderPart = ((Date.now() - otherInstance.latency) - otherInstance.xaa) / otherInstance.saa
       otherInstance.receivedData && otherRenderer.render(renderPart, true, resolution);
     };
 
@@ -90,9 +90,10 @@ export function createGameSharing() {
   const getThisData = () => {
     const data = {
       // Send game instance
-      [gameInstanceXaKey]: gameInstance[gameInstanceXaKey],
+      xaa: gameInstance.xaa,
+      saa: gameInstance.saa,
       [gameInstanceSnakeKey]: gameInstance[gameInstanceSnakeKey],
-      Ej: gameInstance.Ej, // Head state
+      headState: gameInstance.headState, // Head state
 
       // Conditionally send map objects (only if changed)
       [gameInstanceMapObjectHolderKey]: checkObjsChanged() ? {

@@ -9,8 +9,6 @@ export let gameInstanceSnakeKey: any;
 export let gameInstanceSnakeEyeColorKey: any;
 export let gameInstanceMapObjectHolderKey: any;
 export let gameInstanceMapObjectHolderObjsKey: any;
-export let gameInstanceXaKey: any; // FIXME: good naming
-export let gameInstanceSaKey: any; // FIXME: good naming
 export let gameEngineGameLoopFnKey: any;
 export let gameInstanceClass1Key: any;
 export let lastBoardRenderCtx: any;
@@ -76,6 +74,13 @@ export function setupGameLogicHooks() {
   .findMethod('render', 5, [/this\.context\.drawImage/, /this\.context\.translate/, /this\.context\.rotate/]).parent().setName('AssetRenderer')
   .link();
 
+  obfuscationHelper
+  .findMethod('tick', 0, []).parent().setName('GameInstance')
+  .findField(/this.(\w+)\|\|this\.\w+/).setName('headState').parent()
+  .findField(/this\.(\w+)>=this\.\w+;\)this\.\w+\+=this.\w+/).setName('xaa').parent()
+  .findField(/this\.\w+>=this\.(\w+);\)this\.\w+\+=this.\w+/).setName('saa').parent()
+  .link();
+  
   const end = Date.now();
   console.log('[GSM] Game hooks class by function took', end-start, 'ms');
 
@@ -89,15 +94,11 @@ export function setupGameLogicHooks() {
 
       const instanceKey = findChildKeyInObject(this, x => x.ticks !== undefined && x.settings !== undefined && x.menu !== undefined);
       gameInstance = this[instanceKey];
-      window.GameInstance = gameInstance.constructor; // TODO: use deobfuscation helper
       gameInstanceSnakeKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
       gameInstanceSnake = gameInstance[gameInstanceSnakeKey];
       gameInstanceSnakeEyeColorKey = findChildKeysInObject(gameInstanceSnake, x => typeof x === 'string' && !!x.match(/\#[a-fA-F0-9]{3,6}/))[0];
       gameInstanceMapObjectHolderKey = findChildKeyInObject(gameInstance, x => x instanceof MapObjectHolder);
       gameInstanceMapObjectHolderObjsKey = MapObjectHolder.prototype.shuffle.toString().match(/this\.(\w+)\.length/)?.[1];
-      const xaSaRegex = new RegExp(`\\(\\w+\\-this\\.${instanceKey}\\.(\\w+)\\)\\/this\\.${instanceKey}\\.(\\w+)`);
-      gameEngineGameLoopFnKey = findChildKeyInObject(GameEngine.prototype, x => typeof x === 'function' && x.toString().match(xaSaRegex));
-      [, gameInstanceXaKey, gameInstanceSaKey] = GameEngine.prototype[gameEngineGameLoopFnKey].toString().match(xaSaRegex);
       if (!gameInstanceMapObjectHolderObjsKey) throw new Error('[GSM] Failed to find object holder objs key!');
       gameInstanceClass1Key = findChildKeyInObject(gameInstance, x => x instanceof GameClass1);
       changeAssetColorKey = findChildKeyInObject(window, x => typeof x === 'function' && x.toString().includes('.getImageData(0,0'));
@@ -106,9 +107,7 @@ export function setupGameLogicHooks() {
       console.log('[GSM] gameInstanceSnakeKey:', gameInstanceSnakeKey);
       console.log('[GSM] gameInstanceMapObjectHolderKey:', gameInstanceMapObjectHolderKey);
       console.log('[GSM] gameInstanceClass1Key:', gameInstanceClass1Key);
-      console.log('[GSM] gameInstanceXaKey:', gameInstanceXaKey);
-      console.log('[GSM] gameInstanceSaKey:', gameInstanceSaKey);
-
+      
       console.log('[GSM] Game instance:', gameInstance);
 
       try {
