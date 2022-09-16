@@ -1,4 +1,3 @@
-import { Vector2 } from "../../../game-hooks/game-logic-hook";
 import { Mapper, SerializationCtx } from "..";
 
 export class Vector2Mapper implements Mapper {

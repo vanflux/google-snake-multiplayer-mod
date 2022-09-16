@@ -11,6 +11,7 @@ declare interface Window {
 declare type Class = { new(...args: any[]): any; };
 
 declare var GameEngine: Class;
+declare var GameInstance: Class;
 declare var Vector2: Class;
 declare var BoardRenderer: Class;
 declare var PlayerRenderer: Class;

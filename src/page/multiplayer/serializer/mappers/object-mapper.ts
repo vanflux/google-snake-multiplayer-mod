@@ -1,5 +1,4 @@
 import { Mapper, SerializationCtx } from "..";
-import { GameInstance, Settings, SnakeBodyConfig } from "../../../game-hooks/game-logic-hook";
 
 export class ObjectMapper implements Mapper {
   id = 4;

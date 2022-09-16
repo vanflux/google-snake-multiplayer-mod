@@ -43,12 +43,8 @@ class ObfuscationClass {
     if (this.getName() === undefined) return;
     console.log('[GSM] Obfuscation Helper Linking "' + this.getRawName() + '" class as "' + this.getName() + '"');
     const obj: any = this.get();
-    for (const method of this.methods) {
-      if (method.getName() === undefined) continue;
-      console.log('[GSM] Obfuscation Helper Linking "' + this.getRawName() + '.' + method.getRawName() + '" method as "' + method.getRawName() + '" as "' + method.getName() + '"');
-      obj.prototype[method.getName()!] = obj.prototype[method.getRawName()];
-    }
     window[this.getName() as any] = obj;
+    for (const method of this.methods) method.link();
     
     // FIXME: Create classes prototype fields with name linked to rawName (a getter to rawName and setter to rawName)
   }
@@ -96,6 +92,13 @@ class ObfuscationMethod {
 
   public findValues(regex: RegExp) {
     return this.code.match(regex)?.slice(1) ?? undefined;
+  }
+  
+  public link() {
+    if (this.getName() === undefined) return;
+    console.log('[GSM] Obfuscation Helper Linking "' + this.parent().getRawName() + '.' + this.getRawName() + '" method as "' + this.getRawName() + '" as "' + this.getName() + '"');
+    const obj = this.parent().get();
+    obj.prototype[this.getName()!] = obj.prototype[this.getRawName()];
   }
 }
 

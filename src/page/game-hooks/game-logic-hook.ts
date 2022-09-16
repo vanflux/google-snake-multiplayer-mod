@@ -3,19 +3,6 @@ import { detour, findChildKeyInObject, findChildKeysInObject, findClassByMethod,
 
 // This entire file is bizarre, it makes all necessary hooks to the game
 
-export let GameEngine: Class;
-export let Vector2: Class;
-export let BoardRenderer: Class;
-export let PlayerRenderer: Class;
-export let Settings: Class;
-export let Menu: Class
-export let Header: Class;
-export let MapObjectHolder: Class;
-export let SnakeBodyConfig: Class;
-export let GameClass1: Class; // FIXME: good naming
-export let GameInstance: Class;
-export let AssetRenderer: Class;
-
 export let gameInstance: any;
 export let gameInstanceSnake: any;
 export let gameInstanceSnakeKey: any;
@@ -43,17 +30,51 @@ let boardRenderStarted = false;
 
 export function setupGameLogicHooks() {
   const start = Date.now();
-  GameEngine = findClassByMethod('render', 2, x => x.includes('"visible":"hidden"') && x.includes('.render(a,b)'));
-  Vector2 = findClassByMethod('clone', 0, x => x.includes('(this.x,this.y)'));
-  BoardRenderer = findClassByMethod('render', 2, x => x.includes('this.context.fillRect(0,0,this.context.canvas.width,this.context.canvas.height);'));
-  PlayerRenderer = findClassByMethod('render', 3, x => x.includes('RIGHT') && x.includes('DOWN'));
-  Settings = findClassByMethod('toString', 0, x => x.includes('v=10,color='));
-  Menu = findClassByMethod('update', 0, x => x.includes('this.isVisible()') && x.includes('settings'));
-  Header = findClassByMethod(/.*/, 1, x => x.includes('images/icons/material'));
-  MapObjectHolder = findClassByMethod('shuffle', 1, () => true);
-  SnakeBodyConfig = findClassByMethod('reset', 0, x => x.includes('"RIGHT"') && x.includes('this.direction') && x.includes('.push(new'));
-  GameClass1 = findClassByMethod('reset', 0, x => x.includes('.push([])') && x.includes(`new ${Vector2.name}(0,0)`));
-  AssetRenderer = findClassByMethod('render', 5, x => x.includes('this.context.drawImage') && x.includes('this.context.translate') && x.includes('this.context.rotate'));
+
+  obfuscationHelper
+  .findMethod('render', 2, [/"visible":"hidden"/, /\.render\(a,b\)/]).parent().setName('GameEngine')
+  .findMethod('render').setName('render').parent()
+  .link();
+  
+  obfuscationHelper
+  .findMethod('clone', 0, [/\(this\.x,this\.y\)/]).parent().setName('Vector2')
+  .link();
+  
+  obfuscationHelper
+  .findMethod('render', 2, [/this\.context\.fillRect\(0,0,this\.context\.canvas\.width,this\.context\.canvas\.height\);/]).parent().setName('BoardRenderer')
+  .link();
+  
+  obfuscationHelper
+  .findMethod('render', 3, [/RIGHT/, /DOWN/]).parent().setName('PlayerRenderer')
+  .link();
+  
+  obfuscationHelper
+  .findMethod('toString', 0, [/v=10,color=/]).parent().setName('Settings')
+  .link();
+  
+  obfuscationHelper
+  .findMethod('update', 0, [/this\.isVisible\(\)/, /settings/]).parent().setName('Menu')
+  .link();
+
+  obfuscationHelper
+  .findMethod(/.*/, 1, [/images\/icons\/material/]).parent().setName('Header')
+  .link();
+  
+  obfuscationHelper
+  .findMethod('shuffle', 1, []).parent().setName('MapObjectHolder')
+  .link();
+  
+  obfuscationHelper
+  .findMethod('reset', 0, [/"RIGHT"/, /this\.direction/, /\.push\(new/]).parent().setName('SnakeBodyConfig')
+  .link();
+  
+  obfuscationHelper
+  .findMethod('reset', 0, [/\.push\(\[\]\)/, new RegExp(`new ${Vector2.name}\\(0,0\\)`)]).parent().setName('GameClass1')
+  .link();
+  
+  obfuscationHelper
+  .findMethod('render', 5, [/this\.context\.drawImage/, /this\.context\.translate/, /this\.context\.rotate/]).parent().setName('AssetRenderer')
+  .link();
 
   const end = Date.now();
   console.log('[GSM] Game hooks class by function took', end-start, 'ms');
@@ -68,7 +89,7 @@ export function setupGameLogicHooks() {
 
       const instanceKey = findChildKeyInObject(this, x => x.ticks !== undefined && x.settings !== undefined && x.menu !== undefined);
       gameInstance = this[instanceKey];
-      GameInstance = gameInstance.constructor;
+      window.GameInstance = gameInstance.constructor; // TODO: use deobfuscation helper
       gameInstanceSnakeKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
       gameInstanceSnake = gameInstance[gameInstanceSnakeKey];
       gameInstanceSnakeEyeColorKey = findChildKeysInObject(gameInstanceSnake, x => typeof x === 'string' && !!x.match(/\#[a-fA-F0-9]{3,6}/))[0];
