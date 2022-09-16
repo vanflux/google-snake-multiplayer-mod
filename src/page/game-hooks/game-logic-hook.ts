@@ -1,19 +1,10 @@
 import { addCleanupFn } from "../utils/cleanup";
-import { detour, findChildKeyInObject, findChildKeysInObject, findClassByMethod, obfuscationHelper } from "./utils";
+import { detour, findChildKeyInObject, obfuscationHelper } from "./utils";
 
 // This entire file is bizarre, it makes all necessary hooks to the game
 
 export let gameInstance: any;
-export let gameInstanceSnake: any;
-export let gameInstanceSnakeKey: any;
-export let gameInstanceSnakeEyeColorKey: any;
-export let gameInstanceMapObjectHolderKey: any;
-export let gameInstanceMapObjectHolderObjsKey: any;
-export let gameEngineGameLoopFnKey: any;
-export let gameInstanceClass1Key: any;
 export let lastBoardRenderCtx: any;
-export let changeAssetColorKey: any;
-export let changeAssetColor: any;
 
 let onGameInitialize: (lastBoardRenderCtx: any, boardRenderArgs: any)=>any;
 let onGameBeforeBoardRender: (boardRenderCtx: any, boardRenderArgs: any)=>any;
@@ -39,11 +30,12 @@ export function setupGameLogicHooks() {
   .link();
   
   obfuscationHelper
-  .findMethod('render', 2, [/this\.context\.fillRect\(0,0,this\.context\.canvas\.width,this\.context\.canvas\.height\);/]).parent().setName('BoardRenderer')
+  .findMethod('render', 3, [/RIGHT/, /DOWN/]).parent().setName('PlayerRenderer')
   .link();
   
   obfuscationHelper
-  .findMethod('render', 3, [/RIGHT/, /DOWN/]).parent().setName('PlayerRenderer')
+  .findMethod('render', 2, [/this\.context\.fillRect\(0,0,this\.context\.canvas\.width,this\.context\.canvas\.height\);/]).parent().setName('BoardRenderer')
+  .findField(new RegExp(`new ${PlayerRenderer.name}\\(this\\.\\w+,this.settings,this.(\\w+)\\)`)).setName('snakeBodyConfig').parent()
   .link();
   
   obfuscationHelper
@@ -60,10 +52,18 @@ export function setupGameLogicHooks() {
   
   obfuscationHelper
   .findMethod('shuffle', 1, []).parent().setName('MapObjectHolder')
+  .findField(/this\.(\w+)\.length-1/).setName('objs').parent()
   .link();
   
   obfuscationHelper
   .findMethod('reset', 0, [/"RIGHT"/, /this\.direction/, /\.push\(new/]).parent().setName('SnakeBodyConfig')
+  .findField(new RegExp(`this\\.(\\w+)\\.push\\(new ${Vector2.name}\\(Math\\.floor\\(`)).setName('bodyPoses').parent()
+  .findField(/this\.(\w+)=this\.\w+\[2\]/).setName('tailPos').parent()
+  .findField(/this\.direction="NONE";this\.(\w+)="RIGHT"/).setName('oldDirection').parent()
+  .findField(/this\.Hb="NONE";this\.(\w+)=!1/).setName('directionChanged').parent()
+  .findField(/this\.\w+=\[\];this\.(\w+)=0/).setName('deathHeadState').parent()
+  .findField(/this\.(\w+)=\w+\[0\]\[0\]/).setName('color1').parent()
+  .findField(/this\.(\w+)=\w+\[0\]\[1\]/).setName('color2').parent()
   .link();
   
   obfuscationHelper
@@ -79,6 +79,13 @@ export function setupGameLogicHooks() {
   .findField(/this.(\w+)\|\|this\.\w+/).setName('headState').parent()
   .findField(/this\.(\w+)>=this\.\w+;\)this\.\w+\+=this.\w+/).setName('xaa').parent()
   .findField(/this\.\w+>=this\.(\w+);\)this\.\w+\+=this.\w+/).setName('saa').parent()
+  .findField(new RegExp(`this\\.(\\w+)=new ${GameClass1.name}\\(`)).setName('gameClass1').parent()
+  .findField(new RegExp(`this\\.(\\w+)=new ${SnakeBodyConfig.name}\\(`)).setName('snakeBodyConfig').parent()
+  .findField(new RegExp(`this\\.(\\w+)=new ${MapObjectHolder.name}\\(`)).setName('mapObjectHolder').parent()
+  .link();
+
+  obfuscationHelper
+  .findFunction(/.*/, 4, [/\.getImageData\(0,0/]).setName('changeAssetColor')
   .link();
   
   const end = Date.now();
@@ -91,23 +98,8 @@ export function setupGameLogicHooks() {
     if (!initialized) {
       initialized = true;
       console.log('[GSM] Game initialized by game render hook');
-
-      const instanceKey = findChildKeyInObject(this, x => x.ticks !== undefined && x.settings !== undefined && x.menu !== undefined);
+      const instanceKey = findChildKeyInObject(this, x => x instanceof GameInstance);
       gameInstance = this[instanceKey];
-      gameInstanceSnakeKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
-      gameInstanceSnake = gameInstance[gameInstanceSnakeKey];
-      gameInstanceSnakeEyeColorKey = findChildKeysInObject(gameInstanceSnake, x => typeof x === 'string' && !!x.match(/\#[a-fA-F0-9]{3,6}/))[0];
-      gameInstanceMapObjectHolderKey = findChildKeyInObject(gameInstance, x => x instanceof MapObjectHolder);
-      gameInstanceMapObjectHolderObjsKey = MapObjectHolder.prototype.shuffle.toString().match(/this\.(\w+)\.length/)?.[1];
-      if (!gameInstanceMapObjectHolderObjsKey) throw new Error('[GSM] Failed to find object holder objs key!');
-      gameInstanceClass1Key = findChildKeyInObject(gameInstance, x => x instanceof GameClass1);
-      changeAssetColorKey = findChildKeyInObject(window, x => typeof x === 'function' && x.toString().includes('.getImageData(0,0'));
-      changeAssetColor = window[changeAssetColorKey];
-      
-      console.log('[GSM] gameInstanceSnakeKey:', gameInstanceSnakeKey);
-      console.log('[GSM] gameInstanceMapObjectHolderKey:', gameInstanceMapObjectHolderKey);
-      console.log('[GSM] gameInstanceClass1Key:', gameInstanceClass1Key);
-      
       console.log('[GSM] Game instance:', gameInstance);
 
       try {

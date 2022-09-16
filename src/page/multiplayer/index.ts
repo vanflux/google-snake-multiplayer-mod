@@ -1,4 +1,4 @@
-import { gameInstanceSnake, setOnGameBeforeBoardRender, setOnGameBeforeMainPlayerRender } from "../game-hooks/game-logic-hook";
+import { gameInstance, setOnGameBeforeBoardRender, setOnGameBeforeMainPlayerRender } from "../game-hooks/game-logic-hook";
 import { createGameSharing, GameSharing, OtherGameSharing } from "./game-sharing";
 import { connection } from "./connection";
 import EventEmitter from "events";
@@ -54,7 +54,7 @@ class Multiplayer extends EventEmitter {
     
     setOnGameBeforeBoardRender(() => {
       // Send player data to others
-      const curDirection = gameInstanceSnake.direction;
+      const curDirection = gameInstance.snakeBodyConfig.direction;
       if (this.lastDataSend === undefined || Date.now() - this.lastDataSend > 250 || this.lastDirection !== curDirection) {
         this.lastDataSend = Date.now();
         this.lastDirection = curDirection;

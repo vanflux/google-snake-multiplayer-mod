@@ -22,3 +22,5 @@ declare var MapObjectHolder: Class;
 declare var SnakeBodyConfig: Class;
 declare var GameClass1: Class;
 declare var AssetRenderer: Class;
+
+declare function changeAssetColor(assetRenderer: any, color: any, c?: any, d?: any): void;

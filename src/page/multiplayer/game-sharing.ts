@@ -1,4 +1,4 @@
-import { changeAssetColor, gameInstance, gameInstanceClass1Key, gameInstanceSnakeEyeColorKey, gameInstanceSnakeKey, gameInstanceMapObjectHolderKey, gameInstanceMapObjectHolderObjsKey, lastBoardRenderCtx } from "../game-hooks/game-logic-hook";
+import { gameInstance, lastBoardRenderCtx } from "../game-hooks/game-logic-hook";
 import { findChildKeysInObject } from "../game-hooks/utils";
 import { buildSerializer } from "./serializer";
 import { ArrayMapper, ObjectMapper, SimpleMapper, Vector2Mapper } from "./serializer/mappers";
@@ -28,15 +28,15 @@ export function createGameSharing() {
     const otherInstance = Object.assign(new GameInstance(settings, menu, header), {
       receivedData: false,
       latency: 50,
-      [gameInstanceClass1Key]: gameInstance[gameInstanceClass1Key], // A important class for rendering snake
-      [gameInstanceMapObjectHolderKey]: gameInstance[gameInstanceMapObjectHolderKey], // By default, the map objects are shared between gameInstance and others
+      gameClass1: gameInstance.gameClass1, // A important class for rendering snake
+      mapObjectHolder: gameInstance.mapObjectHolder, // By default, the map objects are shared between gameInstance and others
     });
-    const otherRenderer: any = new PlayerRenderer(otherInstance, settings, lastBoardRenderCtx[gameInstanceSnakeKey]);
+    const otherRenderer: any = new PlayerRenderer(otherInstance, settings, lastBoardRenderCtx.snakeBodyConfig);
 
     const updateData = (serializedData: any) => {
-      const oldEyeColor = otherInstance?.[gameInstanceSnakeKey]?.[gameInstanceSnakeEyeColorKey];
+      const oldEyeColor = otherInstance?.snakeBodyConfig?.color1;
       serializer.deserialize(serializedData, otherInstance); // This line is the CORE of update
-      const newEyeColor = otherInstance?.[gameInstanceSnakeKey]?.[gameInstanceSnakeEyeColorKey];
+      const newEyeColor = otherInstance?.snakeBodyConfig?.color1;
       if (newEyeColor !== oldEyeColor) {
         // Regenerate all assets based on eye color
         findChildKeysInObject(otherRenderer, x => x instanceof AssetRenderer).forEach(key => {
@@ -69,7 +69,7 @@ export function createGameSharing() {
 
   let oldObjs: any[] = [];
   const checkObjsChanged = () => {
-    const newObjs = gameInstance?.[gameInstanceMapObjectHolderKey]?.[gameInstanceMapObjectHolderObjsKey];
+    const newObjs = gameInstance?.mapObjectHolder?.objs;
     if (!newObjs || newObjs.length === 0) return false;
     for (let i = 0; i < newObjs.length; i++) {
       const newItem = newObjs[i];
@@ -92,12 +92,21 @@ export function createGameSharing() {
       // Send game instance
       xaa: gameInstance.xaa,
       saa: gameInstance.saa,
-      [gameInstanceSnakeKey]: gameInstance[gameInstanceSnakeKey],
-      headState: gameInstance.headState, // Head state
+      snakeBodyConfig: {
+        bodyPoses: gameInstance.snakeBodyConfig.bodyPoses,
+        tailPos: gameInstance.snakeBodyConfig.tailPos,
+        direction: gameInstance.snakeBodyConfig.direction,
+        oldDirection: gameInstance.snakeBodyConfig.oldDirection,
+        directionChanged: gameInstance.snakeBodyConfig.directionChanged,
+        deathHeadState: gameInstance.snakeBodyConfig.deathHeadState, // Death head state
+        color1: gameInstance.snakeBodyConfig.color1, // Snake color 1
+        color2: gameInstance.snakeBodyConfig.color2, // Snake color 2
+      },
+      headState: gameInstance.headState,
 
       // Conditionally send map objects (only if changed)
-      [gameInstanceMapObjectHolderKey]: checkObjsChanged() ? {
-        [gameInstanceMapObjectHolderObjsKey]: gameInstance[gameInstanceMapObjectHolderKey][gameInstanceMapObjectHolderObjsKey],
+      mapObjectHolder: checkObjsChanged() ? {
+        objs: gameInstance?.mapObjectHolder?.objs,
       } : {},
     };
     const serializedResult = serializer.serialize(data);

@@ -70,6 +70,56 @@ class ObfuscationClass {
   }
 }
 
+class ObfuscationFunction {
+  private name?: string;
+
+  constructor(
+    private rawName: string,
+    private paramCount: number,
+    private code: string,
+    private jsObj: (...args: any) => any,
+  ) {}
+
+  public getRawName() {
+    return this.rawName;
+  }
+
+  public getName() {
+    return this.name;
+  }
+
+  public getParamCount() {
+    return this.paramCount;
+  }
+
+  public getCode() {
+    return this.code;
+  }
+
+  public setName(name: string) {
+    this.name = name;
+    return this;
+  }
+
+  public get() {
+    return this.jsObj;
+  }
+
+  public contains(regex: RegExp) {
+    return !!this.code.match(regex);
+  }
+
+  public findValues(regex: RegExp) {
+    return this.code.match(regex)?.slice(1) ?? undefined;
+  }
+  
+  public link() {
+    if (this.getName() === undefined) return;
+    console.log('[GSM] Obfuscation Helper Linking "' + this.getRawName() + '" function as "' + this.getName() + '"');
+    window[this.getName() as any] = window[this.getRawName() as any];
+  }
+}
+
 class ObfuscationMethod {
   private name?: string;
 
@@ -155,7 +205,7 @@ class ObfuscationField {
   
   public link() {
     if (this.getName() === undefined) return;
-    console.log('[GSM] Obfuscation Helper Linking "' + this.parent().getRawName() + '.' + this.getRawName() + '" field as "' + this.getRawName() + '" as "' + this.getName() + '"');
+    console.log('[GSM] Obfuscation Helper Linking "' + this.parent().getRawName() + '.' + this.getRawName() + '" as "' + this.getName() + '"');
     const obj = this.parent().get();
     const self = this;
     Object.defineProperties(obj.prototype, {
@@ -170,18 +220,23 @@ class ObfuscationField {
 
 class ObfuscationHelper {
   private classes!: ObfuscationClass[];
+  private functions!: ObfuscationFunction[];
   
   public setup() {
     try {
       const start = Date.now();
       console.log('[GSM] Obfuscation Helper Setup');
       this.classes = [];
+      this.functions = [];
       for (const key in window) {
         if (!key.startsWith('s_') && !key.startsWith('S_')) continue;
         try {
           const obj: any = window[key as any];
           if (typeof obj === 'function' || (typeof obj === 'object' && obj !== null)) {
             if (typeof obj.prototype === 'object') {
+              const functiom = new ObfuscationFunction(key, obj.length, obj.toString(), obj);
+              this.functions.push(functiom);
+              
               const methods: ObfuscationMethod[] = [];
               const fields: ObfuscationField[] = [];
               const code = obj.toString();
@@ -216,9 +271,20 @@ class ObfuscationHelper {
     containList: RegExp[],
   ) {
     const methods = this.classes.flatMap(c => c.getMethods().filter(x => x.getRawName().match(rawName) && x.getParamCount() === paramCount && containList.every(y => x.contains(y)))).filter(Boolean);
-    if (methods.length === 0) throw new Error('No methods was found on class!');
+    if (methods.length === 0) throw new Error('No methods were found on class!');
     if (methods.length > 1) throw new Error('More than 1 method was found on class!');
     return methods[0];
+  }
+
+  public findFunction(
+    rawName: string | RegExp,
+    paramCount: number,
+    containList: RegExp[],
+  ) {
+    const functions = this.functions.filter(x => x.getRawName().match(rawName) && x.getParamCount() === paramCount && containList.every(y => x.contains(y)));
+    if (functions.length === 0) throw new Error('No functions were found on class!');
+    if (functions.length > 1) throw new Error('More than 1 function was found on class!');
+    return functions[0];
   }
 }
 
