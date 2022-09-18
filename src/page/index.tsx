@@ -4,7 +4,7 @@ import { ExtraHeader } from './components/extra-header';
 import { canvasUIHook } from './game-hooks/canvas-ui-hook';
 import { setOnGameInitialize, setupGameLogicHooks } from './game-hooks/game-logic-hook';
 import { headerUIHook } from './game-hooks/header-ui-hook';
-import { obfuscationHelper } from './game-hooks/utils';
+import { linkerHelper } from './utils/linker';
 import { multiplayer } from './multiplayer';
 import { cleanup } from './utils/cleanup';
 import { snakeLoop } from './utils/snake-loop';
@@ -17,7 +17,7 @@ export async function pageLoadedEntry() {
     try {
       console.log('[GSM] Starting...');
 
-      obfuscationHelper.setup();
+      linkerHelper.setup();
       setupGameLogicHooks();
       setOnGameInitialize(_ => {
         headerUIHook.setup(<ExtraHeader></ExtraHeader>);

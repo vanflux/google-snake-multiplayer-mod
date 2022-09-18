@@ -1,6 +1,7 @@
 import { addCleanupFn } from "../utils/cleanup";
 import { escapeRegex } from "../utils/escape-regex";
-import { detour, findChildKeyInObject, obfuscationHelper } from "./utils";
+import { linkerHelper } from "../utils/linker";
+import { detour, findChildKeyInObject } from "./utils";
 
 // This entire file is bizarre, it makes all necessary hooks to the game
 
@@ -21,42 +22,42 @@ let boardRenderStarted = false;
 export function setupGameLogicHooks() {
   const start = Date.now();
 
-  obfuscationHelper
+  linkerHelper
   .findMethod('render', 2, [/"visible":"hidden"/, /\.render\(a,b\)/]).parent().setName('GameEngine')
   .findMethod('render').setName('render').parent()
   .link();
   
-  obfuscationHelper
+  linkerHelper
   .findMethod('clone', 0, [/\(this\.x,this\.y\)/]).parent().setName('Vector2')
   .link();
   
-  obfuscationHelper
+  linkerHelper
   .findMethod('render', 3, [/RIGHT/, /DOWN/]).parent().setName('PlayerRenderer')
   .link();
   
-  obfuscationHelper
+  linkerHelper
   .findMethod('render', 2, [/this\.context\.fillRect\(0,0,this\.context\.canvas\.width,this\.context\.canvas\.height\);/]).parent().setName('BoardRenderer')
   .findField(new RegExp(`new ${escapeRegex(PlayerRenderer.name)}\\(this\\.[\\w\\$]+,this.settings,this.([\\w\\$]+)\\)`)).setName('snakeBodyConfig').parent()
   .link();
   
-  obfuscationHelper
+  linkerHelper
   .findMethod('toString', 0, [/v=10,color=/]).parent().setName('Settings')
   .link();
   
-  obfuscationHelper
+  linkerHelper
   .findMethod('update', 0, [/this\.isVisible\(\)/, /settings/]).parent().setName('Menu')
   .link();
 
-  obfuscationHelper
+  linkerHelper
   .findMethod(/.*/, 1, [/images\/icons\/material/]).parent().setName('Header')
   .link();
   
-  obfuscationHelper
+  linkerHelper
   .findMethod('shuffle', 1, []).parent().setName('MapObjectHolder')
   .findField(/this\.([\w\$]+)\.length-1/).setName('objs').parent()
   .link();
   
-  obfuscationHelper
+  linkerHelper
   .findMethod('reset', 0, [/"RIGHT"/, /this\.direction/, /\.push\(new/]).parent().setName('SnakeBodyConfig')
   .findField(new RegExp(`this\\.([\\w\\$]+)\\.push\\(new ${escapeRegex(Vector2.name)}\\(Math\\.floor\\(`)).setName('bodyPoses').parent()
   .findField(/this\.([\w\$]+)=this\.[\w\$]+\[2\]/).setName('tailPos').parent()
@@ -67,15 +68,15 @@ export function setupGameLogicHooks() {
   .findField(/this\.([\w\$]+)=[\w\$]+\[0\]\[1\]/).setName('color2').parent()
   .link();
   
-  obfuscationHelper
+  linkerHelper
   .findMethod('reset', 0, [/\.push\(\[\]\)/, new RegExp(`new ${escapeRegex(Vector2.name)}\\(0,0\\)`)]).parent().setName('GameClass1')
   .link();
   
-  obfuscationHelper
+  linkerHelper
   .findMethod('render', 5, [/this\.context\.drawImage/, /this\.context\.translate/, /this\.context\.rotate/]).parent().setName('AssetRenderer')
   .link();
 
-  obfuscationHelper
+  linkerHelper
   .findMethod('tick', 0, []).parent().setName('GameInstance')
   .findField(/this.([\w\$]+)\|\|this\.[\w\$]+/).setName('headState').parent()
   .findField(/this\.([\w\$]+)>=this\.[\w\$]+;\)this\.[\w\$]+\+=this.[\w\$]+/).setName('xaa').parent()
@@ -85,7 +86,7 @@ export function setupGameLogicHooks() {
   .findField(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(MapObjectHolder.name)}\\(`)).setName('mapObjectHolder').parent()
   .link();
 
-  obfuscationHelper
+  linkerHelper
   .findFunction(/.*/, [3,4], [/\.getImageData\(0,0/]).setName('changeAssetColor')
   .link();
   
