@@ -22,74 +22,53 @@ let boardRenderStarted = false;
 export function setupGameLogicHooks() {
   const start = Date.now();
 
-  linkerHelper
-  .findMethod('render', 2, [/"visible":"hidden"/, /\.render\(a,b\)/]).parent().setName('GameEngine')
-  .findMethod('render').setName('render').parent()
-  .link();
-  
-  linkerHelper
-  .findMethod('clone', 0, [/\(this\.x,this\.y\)/]).parent().setName('Vector2')
-  .link();
-  
-  linkerHelper
-  .findMethod('render', 3, [/RIGHT/, /DOWN/]).parent().setName('PlayerRenderer')
-  .link();
-  
-  linkerHelper
-  .findMethod('render', 2, [/this\.context\.fillRect\(0,0,this\.context\.canvas\.width,this\.context\.canvas\.height\);/]).parent().setName('BoardRenderer')
-  .findField(new RegExp(`new ${escapeRegex(PlayerRenderer.name)}\\(this\\.[\\w\\$]+,this.settings,this.([\\w\\$]+)\\)`)).setName('snakeBodyConfig').parent()
-  .link();
-  
-  linkerHelper
-  .findMethod('toString', 0, [/v=10,color=/]).parent().setName('Settings')
-  .link();
-  
-  linkerHelper
-  .findMethod('update', 0, [/this\.isVisible\(\)/, /settings/]).parent().setName('Menu')
-  .link();
+  // Collectable proxy
+  const [collF1, collF2, collF3, collF4, collF5, collF6, collF7, collF8] =
+    linkerHelper.findValues(/\{([\w\$]+):new [\w\$]+\(Math\.floor\(3.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*\}/, 8, 'function');
+  window.createCollectableProxy = linkerHelper.createProxyFactory({
+    maps: {
+      f1: { rawName: collF1 },
+      f2: { rawName: collF2 },
+      f3: { rawName: collF3 },
+      f4: { rawName: collF4 },
+      f5: { rawName: collF5 },
+      f6: { rawName: collF6 },
+      f7: { rawName: collF7 },
+      f8: { rawName: collF8 },
+    },
+  });
 
-  linkerHelper
-  .findMethod(/.*/, 1, [/images\/icons\/material/]).parent().setName('Header')
-  .link();
-  
-  linkerHelper
-  .findMethod('shuffle', 1, []).parent().setName('MapObjectHolder')
-  .findField(/this\.([\w\$]+)\.length-1/).setName('objs').parent()
-  .link();
-  
-  linkerHelper
-  .findMethod('reset', 0, [/"RIGHT"/, /this\.direction/, /\.push\(new/]).parent().setName('SnakeBodyConfig')
-  .findField(new RegExp(`this\\.([\\w\\$]+)\\.push\\(new ${escapeRegex(Vector2.name)}\\(Math\\.floor\\(`)).setName('bodyPoses').parent()
-  .findField(/this\.([\w\$]+)=this\.[\w\$]+\[2\]/).setName('tailPos').parent()
-  .findField(/this\.direction="NONE";this\.([\w\$]+)="RIGHT"/).setName('oldDirection').parent()
-  .findField(/this\.[\w\$]+="NONE";this\.([\w\$]+)=!1/).setName('directionChanged').parent()
-  .findField(/this\.[\w\$]+=\[\];this\.([\w\$]+)=0/).setName('deathHeadState').parent()
-  .findField(/this\.([\w\$]+)=[\w\$]+\[0\]\[0\]/).setName('color1').parent()
-  .findField(/this\.([\w\$]+)=[\w\$]+\[0\]\[1\]/).setName('color2').parent()
-  .link();
-  
-  linkerHelper
-  .findMethod('reset', 0, [/\.push\(\[\]\)/, new RegExp(`new ${escapeRegex(Vector2.name)}\\(0,0\\)`)]).parent().setName('GameClass1')
-  .link();
-  
-  linkerHelper
-  .findMethod('render', 5, [/this\.context\.drawImage/, /this\.context\.translate/, /this\.context\.rotate/]).parent().setName('AssetRenderer')
-  .link();
+  window.changeAssetColor = linkerHelper.findFunction(/.*/, [3,4], [/\.getImageData\(0,0/]);
 
-  linkerHelper
-  .findMethod('tick', 0, []).parent().setName('GameInstance')
-  .findField(/this.([\w\$]+)\|\|this\.[\w\$]+/).setName('headState').parent()
-  .findField(/this\.([\w\$]+)>=this\.[\w\$]+;\)this\.[\w\$]+\+=this.[\w\$]+/).setName('xaa').parent()
-  .findField(/this\.[\w\$]+>=this\.([\w\$]+);\)this\.[\w\$]+\+=this.[\w\$]+/).setName('saa').parent()
-  .findField(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(GameClass1.name)}\\(`)).setName('gameClass1').parent()
-  .findField(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(SnakeBodyConfig.name)}\\(`)).setName('snakeBodyConfig').parent()
-  .findField(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(MapObjectHolder.name)}\\(`)).setName('mapObjectHolder').parent()
-  .link();
+  window.GameEngine = linkerHelper.findClassByMethod('render', [2], [/"visible":"hidden"/, /\.render\(a,b\)/]);
+  window.Vector2 = linkerHelper.findClassByMethod('clone', [0], [/\(this\.x,this\.y\)/]);
+  window.PlayerRenderer = linkerHelper.findClassByMethod('render', [3], [/RIGHT/, /DOWN/]);
+  window.BoardRenderer = linkerHelper.findClassByMethod('render', [2], [/this\.context\.fillRect\(0,0,this\.context\.canvas\.width,this\.context\.canvas\.height\);/]);
+  window.Settings = linkerHelper.findClassByMethod('toString', [0], [/v=10,color=/]);
+  window.Menu = linkerHelper.findClassByMethod('update', [0], [/this\.isVisible\(\)/, /settings/]);
+  window.Header = linkerHelper.findClassByMethod(/.*/, [1], [/images\/icons\/material/]);
+  window.MapObjectHolder = linkerHelper.findClassByMethod('shuffle', [1], []);
+  window.SnakeBodyConfig = linkerHelper.findClassByMethod('reset', [0], [/"RIGHT"/, /this\.direction/, /\.push\(new/]);
+  window.GameClass1 = linkerHelper.findClassByMethod('reset', [0], [/\.push\(\[\]\)/, new RegExp(`new ${escapeRegex(Vector2.name)}\\(0,0\\)`)]);
+  window.AssetRenderer = linkerHelper.findClassByMethod('render', [5], [/this\.context\.drawImage/, /this\.context\.translate/, /this\.context\.rotate/]);
+  window.GameInstance = linkerHelper.findClassByMethod('tick', [0], []);
 
-  linkerHelper
-  .findFunction(/.*/, [3,4], [/\.getImageData\(0,0/]).setName('changeAssetColor')
-  .link();
-  
+  linkerHelper.proxyProp(BoardRenderer, 'snakeBodyConfig', linkerHelper.findValue(new RegExp(`new ${escapeRegex(PlayerRenderer.name)}\\(this\\.[\\w\\$]+,this.settings,this.([\\w\\$]+)\\)`), 'class'));
+  linkerHelper.proxyProp(MapObjectHolder, 'objs', linkerHelper.findValue(/this\.([\w\$]+)\.length-1/, 'method', MapObjectHolder));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'bodyPoses', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)\\.push\\(new ${escapeRegex(Vector2.name)}\\(Math\\.floor\\(`), 'method', SnakeBodyConfig));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'tailPos', linkerHelper.findValue(/this\.([\w\$]+)=this\.[\w\$]+\[2\]/, 'method', SnakeBodyConfig));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'oldDirection', linkerHelper.findValue(/this\.direction="NONE";this\.([\w\$]+)="RIGHT"/, 'method', SnakeBodyConfig));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'directionChanged', linkerHelper.findValue(/this\.[\w\$]+="NONE";this\.([\w\$]+)=!1/, 'method', SnakeBodyConfig));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'deathHeadState', linkerHelper.findValue(/this\.[\w\$]+=\[\];this\.([\w\$]+)=0/, 'method', SnakeBodyConfig));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'color1', linkerHelper.findValue(/this\.([\w\$]+)=[\w\$]+\[0\]\[0\]/, 'class', SnakeBodyConfig));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'color2', linkerHelper.findValue(/this\.([\w\$]+)=[\w\$]+\[0\]\[1\]/, 'class', SnakeBodyConfig));
+  linkerHelper.proxyProp(GameInstance, 'headState', linkerHelper.findValue(/\(this.([\w\$]+)\|\|this\.[\w\$]+\)/, 'method', GameInstance));
+  linkerHelper.proxyProp(GameInstance, 'xaa', linkerHelper.findValue(/this\.([\w\$]+)>=this\.[\w\$]+;\)this\.[\w\$]+\+=this.[\w\$]+/, 'method', GameInstance));
+  linkerHelper.proxyProp(GameInstance, 'saa', linkerHelper.findValue(/this\.[\w\$]+>=this\.([\w\$]+);\)this\.[\w\$]+\+=this.[\w\$]+/, 'method', GameInstance));
+  linkerHelper.proxyProp(GameInstance, 'gameClass1', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(GameClass1.name)}\\(`), 'class', GameInstance));
+  linkerHelper.proxyProp(GameInstance, 'snakeBodyConfig', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(SnakeBodyConfig.name)}\\(`), 'class', GameInstance));
+  linkerHelper.proxyProp(GameInstance, 'mapObjectHolder', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(MapObjectHolder.name)}\\(`), 'class', GameInstance));
+
   const end = Date.now();
   console.log('[GSM] Game hooks class by function took', end-start, 'ms');
 

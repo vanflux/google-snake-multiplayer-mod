@@ -1,7 +1,5 @@
 import { gameInstance, lastBoardRenderCtx } from "../game-hooks/game-logic-hook";
 import { findChildKeysInObject } from "../game-hooks/utils";
-import { buildSerializer } from "./serializer";
-import { ArrayMapper, ObjectMapper, SimpleMapper, Vector2Mapper } from "./serializer/mappers";
 
 export type GameSharing = ReturnType<typeof createGameSharing>;
 export type OtherGameSharing = ReturnType<GameSharing['createOther']>;
@@ -11,12 +9,6 @@ const MAX_LATENCY_COMPENSATION = 1000;
 const LATENCY_COMPENSATION_AMPLIFIER = 1.1;
 
 export function createGameSharing() {
-  const serializer = buildSerializer([
-    new SimpleMapper(),
-    new ArrayMapper(),
-    new ObjectMapper(),
-    new Vector2Mapper(),
-  ]);
   let latency = 50;
 
   const createOther = () => {
@@ -35,7 +27,35 @@ export function createGameSharing() {
 
     const updateData = (serializedData: any) => {
       const oldEyeColor = otherInstance?.snakeBodyConfig?.color1;
-      serializer.deserialize(serializedData, otherInstance); // This line is the CORE of update
+
+      otherInstance.xaa = serializedData.xaa;
+      otherInstance.saa = serializedData.saa;
+      otherInstance.headState = serializedData.headState;
+      otherInstance.snakeBodyConfig.headState = serializedData.snakeBodyConfig.headState;
+      otherInstance.snakeBodyConfig.bodyPoses.length = serializedData.snakeBodyConfig.bodyPoses.length;
+      serializedData.snakeBodyConfig.bodyPoses.forEach((x: any, i: number) => otherInstance.snakeBodyConfig.bodyPoses[i] = new Vector2(x.x, x.y));
+      otherInstance.snakeBodyConfig.tailPos = new Vector2(serializedData.snakeBodyConfig.tailPos.x, serializedData.snakeBodyConfig.tailPos.y);
+      otherInstance.snakeBodyConfig.direction = serializedData.snakeBodyConfig.direction;
+      otherInstance.snakeBodyConfig.oldDirection = serializedData.snakeBodyConfig.oldDirection;
+      otherInstance.snakeBodyConfig.directionChanged = serializedData.snakeBodyConfig.directionChanged;
+      otherInstance.snakeBodyConfig.deathHeadState = serializedData.snakeBodyConfig.deathHeadState;
+      otherInstance.snakeBodyConfig.color1 = serializedData.snakeBodyConfig.color1;
+      otherInstance.snakeBodyConfig.color2 = serializedData.snakeBodyConfig.color2;
+      if (serializedData.mapObjectHolder?.objs) {
+        otherInstance.mapObjectHolder.objs.length = serializedData.mapObjectHolder.objs.length;
+        serializedData.mapObjectHolder.objs.forEach((x: any, i: number) => {
+          const proxied = createCollectableProxy(otherInstance.mapObjectHolder.objs[i]);
+          proxied.f1 = new Vector2(x.f1.x, x.f1.y);
+          proxied.f2 = x.f2;
+          proxied.f3 = x.f3;
+          proxied.f4 = x.f4;
+          proxied.f5 = new Vector2(x.f5.x, x.f5.y);
+          proxied.f6 = new Vector2(x.f6.x, x.f6.y);
+          proxied.f7 = x.f7;
+          proxied.f8 = x.f8;
+        });
+      }
+      
       const newEyeColor = otherInstance?.snakeBodyConfig?.color1;
       if (newEyeColor !== oldEyeColor) {
         // Regenerate all assets based on eye color
@@ -88,13 +108,12 @@ export function createGameSharing() {
   };
 
   const getThisData = () => {
-    const data = {
-      // Send game instance
+    return {
       xaa: gameInstance.xaa,
       saa: gameInstance.saa,
       snakeBodyConfig: {
-        bodyPoses: gameInstance.snakeBodyConfig.bodyPoses,
-        tailPos: gameInstance.snakeBodyConfig.tailPos,
+        bodyPoses: gameInstance.snakeBodyConfig.bodyPoses.map((x: any) => ({ x: x.x, y: x.y })),
+        tailPos: ({ x: gameInstance.snakeBodyConfig.tailPos.x, y: gameInstance.snakeBodyConfig.tailPos.y }),
         direction: gameInstance.snakeBodyConfig.direction,
         oldDirection: gameInstance.snakeBodyConfig.oldDirection,
         directionChanged: gameInstance.snakeBodyConfig.directionChanged,
@@ -106,14 +125,23 @@ export function createGameSharing() {
         },
       },
       headState: gameInstance.headState,
-
-      // Conditionally send map objects (only if changed)
       mapObjectHolder: checkObjsChanged() ? {
-        objs: gameInstance?.mapObjectHolder?.objs,
-      } : {},
+        // Conditionally send map objects (only if changed)
+        objs: gameInstance?.mapObjectHolder?.objs?.map((x: any) => {
+          const proxiedObj = createCollectableProxy(x);
+          return {
+            f1: { x: proxiedObj.f1.x, y: proxiedObj.f1.y },
+            f2: proxiedObj.f2,
+            f3: proxiedObj.f3,
+            f4: proxiedObj.f4,
+            f5: { x: proxiedObj.f5.x, y: proxiedObj.f5.y },
+            f6: { x: proxiedObj.f6.x, y: proxiedObj.f6.y },
+            f7: proxiedObj.f7,
+            f8: proxiedObj.f8,
+          } as Collectable;
+        }),
+      } : undefined,
     };
-    const serializedResult = serializer.serialize(data);
-    return serializedResult.data;
   };
 
   const updateLatency = (newLatency: number) => {
