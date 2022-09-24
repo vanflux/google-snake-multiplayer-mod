@@ -1,7 +1,10 @@
-import { gameInstance, setOnGameBeforeBoardRender, setOnGameBeforeMainPlayerRender } from "../game-hooks/game-logic-hook";
+import { gameInstance } from "../game-hooks/game-logic-hook";
 import { createGameSharing, GameSharing, OtherGameSharing } from "./game-sharing";
 import { connection } from "./connection";
 import EventEmitter from "events";
+import { addCleanupFn } from "../utils/cleanup";
+import { detour } from "../game-hooks/utils";
+import { snakeCollision } from "./snake-collision";
 
 class Multiplayer extends EventEmitter {
   private others = new Map<string, OtherGameSharing>();
@@ -18,6 +21,7 @@ class Multiplayer extends EventEmitter {
   }
 
   setup() {
+    const self = this;
     this.gameSharing = createGameSharing();
 
     // Setup communication
@@ -52,21 +56,26 @@ class Multiplayer extends EventEmitter {
       this.emit('others_changed', this.others);
     });
     
-    setOnGameBeforeBoardRender(() => {
+    addCleanupFn(detour(BoardRenderer.prototype, 'render', function () {
       // Send player data to others
       const curDirection = gameInstance.snakeBodyConfig.direction;
-      if (this.lastDataSend === undefined || Date.now() - this.lastDataSend > 250 || this.lastDirection !== curDirection) {
-        this.lastDataSend = Date.now();
-        this.lastDirection = curDirection;
-        const serializedData = this.gameSharing.getThisData();
+      if (self.lastDataSend === undefined || Date.now() - self.lastDataSend > 250 || self.lastDirection !== curDirection) {
+        self.lastDataSend = Date.now();
+        self.lastDirection = curDirection;
+        const serializedData = self.gameSharing.getThisData();
         connection.send('data', serializedData);
       }
-    });
-    setOnGameBeforeMainPlayerRender((self, [,,resolution]) => {
+    }));
+
+    addCleanupFn(detour(PlayerRenderer.prototype, 'render', function (a: any, b: any, resolution: any) {
       // Update + render other players
-      this.others.forEach(other => other.update());
-      this.others.forEach(other => other.render(resolution));
-    });
+      if (this.instance === gameInstance) {
+        self.others.forEach(other => other.update());
+        self.others.forEach(other => other.render(resolution));
+      }
+    }));
+    
+    snakeCollision.setup();
   }
 }
 

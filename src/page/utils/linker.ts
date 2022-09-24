@@ -63,7 +63,7 @@ class LinkerHelper {
     return methods[0].parentJsObj;
   }
 
-  public findMethod(
+  public findMethodName(
     classJsObj: any,
     rawName: string | RegExp,
     paramCount: number[],
@@ -72,7 +72,7 @@ class LinkerHelper {
     const methods = this.objs.filter(x => x.parentJsObj === classJsObj && x.type === 'method' && x.name.match(rawName) && paramCount.includes(x.jsObj.length) && containList.every(y => x.code.match(y)));
     if (methods.length === 0) throw new Error('No methods were found!');
     if (methods.length > 1) throw new Error('More than 1 method was found!');
-    return methods[0].jsObj;
+    return methods[0].name;
   }
 
   public findFunction(

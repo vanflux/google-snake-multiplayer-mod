@@ -1,3 +1,5 @@
+// Responsability: Share game instance with other players and sync other player instances
+
 import { gameInstance, lastBoardRenderCtx } from "../game-hooks/game-logic-hook";
 import { findChildKeysInObject } from "../game-hooks/utils";
 
@@ -22,6 +24,7 @@ export function createGameSharing() {
       latency: 50,
       gameClass1: gameInstance.gameClass1, // A important class for rendering snake
       mapObjectHolder: gameInstance.mapObjectHolder, // By default, the map objects are shared between gameInstance and others
+      lastInvencibilityTime: Date.now(),
     });
     const otherRenderer = new PlayerRenderer(otherInstance, settings, lastBoardRenderCtx.canvasCtx);
 
@@ -31,6 +34,7 @@ export function createGameSharing() {
       otherInstance.xaa = serializedData.xaa;
       otherInstance.saa = serializedData.saa;
       otherInstance.headState = serializedData.headState;
+      otherInstance.lastInvencibilityTime = serializedData.lastInvencibilityTime;
       otherInstance.snakeBodyConfig.headState = serializedData.snakeBodyConfig.headState;
       otherInstance.snakeBodyConfig.bodyPoses.length = serializedData.snakeBodyConfig.bodyPoses.length;
       serializedData.snakeBodyConfig.bodyPoses.forEach((x, i) => otherInstance.snakeBodyConfig.bodyPoses[i] = new Vector2(x.x, x.y));
@@ -85,7 +89,7 @@ export function createGameSharing() {
 
     console.log('[GSM] Other instance:', otherInstance);
 
-    return {updateData, updateLatency, render, update, getLatency};
+    return {updateData, updateLatency, render, update, getLatency, instance: otherInstance};
   };
 
   let oldObjs: Collectable[] = [];
@@ -107,6 +111,8 @@ export function createGameSharing() {
     return {
       xaa: gameInstance.xaa,
       saa: gameInstance.saa,
+      headState: gameInstance.headState,
+      lastInvencibilityTime: gameInstance.lastInvencibilityTime,
       snakeBodyConfig: {
         bodyPoses: gameInstance.snakeBodyConfig.bodyPoses.map((x: any) => ({ x: x.x, y: x.y })),
         tailPos: ({ x: gameInstance.snakeBodyConfig.tailPos.x, y: gameInstance.snakeBodyConfig.tailPos.y }),
@@ -117,7 +123,6 @@ export function createGameSharing() {
         color1: gameInstance.snakeBodyConfig.color1, // Snake color 1
         color2: gameInstance.snakeBodyConfig.color2, // Snake color 2
       },
-      headState: gameInstance.headState,
       mapObjectHolder: checkObjsChanged() ? {
         // Conditionally send map objects (only if changed)
         objs: gameInstance?.mapObjectHolder?.objs?.map((x: any) => {

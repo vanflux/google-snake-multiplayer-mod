@@ -19,16 +19,47 @@ export function findChildKeyInObject(obj: any, fn: (child: any) => boolean) {
 export function detour(
   obj: any,
   fnKey: string,
-  detourFn: (this: any, ...args: any) => any
+  beforeFn?: (this: any, ...args: any) => any,
+  afterFn?: (this: any, ...args: any) => any,
 ) {
-  const original = obj[fnKey];
-  obj[fnKey] = function (...args: any) {
-    try {
-      if (detourFn.call(this, ...args)) return;
-    } catch(exc) {
-      console.error('[GSM] Detour error', fnKey, exc);
+  const originalFnKey = `___o${fnKey}`;
+  const beforeFnListKey = `___b${fnKey}`;
+  const afterFnListKey = `___a${fnKey}`;
+  const isFirst = !obj[originalFnKey];
+  const originalFn = obj[originalFnKey] = (obj[originalFnKey] || obj[fnKey]);
+  const beforeFnList = obj[beforeFnListKey] = (obj[beforeFnListKey] || []);
+  const afterFnList = obj[afterFnListKey] = (obj[afterFnListKey] || []);
+  beforeFn && beforeFnList.push(beforeFn);
+  afterFn && afterFnList.push(afterFn);
+
+  if (isFirst) {
+    obj[fnKey] = function (...args: any) {
+      try {
+        for (const detourFn of beforeFnList) {
+          const result = detourFn.call(this, ...args);
+          if (result) return;
+        }
+      } catch(exc) {
+        console.error('[GSM] Detour before fn list error', fnKey, exc);
+      }
+      const result = originalFn.call(this, ...args);
+      try {
+        for (const detourFn of afterFnList) {
+          const result = detourFn.call(this, ...args);
+          if (result) return;
+        }
+      } catch(exc) {
+        console.error('[GSM] Detour after fn list error', fnKey, exc);
+      }
+      return result;
+    };
+  }
+  return () => {
+    beforeFn && beforeFnList.splice(beforeFnList.indexOf(beforeFn), 1);
+    afterFn && afterFnList.splice(afterFnList.indexOf(afterFn), 1);
+    if (beforeFnList.length === 0 && afterFnList.length === 0) {
+      obj[fnKey] = originalFn;
+      delete obj[originalFnKey];
     }
-    return original.call(this, ...args);
   };
-  return () => (obj[fnKey] = original);
 }

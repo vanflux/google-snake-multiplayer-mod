@@ -2,7 +2,7 @@ import React from 'react';
 import { CanvasOverlay } from './components/canvas-overlay';
 import { ExtraHeader } from './components/extra-header';
 import { canvasUIHook } from './game-hooks/canvas-ui-hook';
-import { setOnGameInitialize, setupGameLogicHooks } from './game-hooks/game-logic-hook';
+import { gameLogicHooks } from './game-hooks/game-logic-hook';
 import { headerUIHook } from './game-hooks/header-ui-hook';
 import { linkerHelper } from './utils/linker';
 import { multiplayer } from './multiplayer';
@@ -18,13 +18,13 @@ export async function pageLoadedEntry() {
       console.log('[GSM] Starting...');
 
       linkerHelper.setup();
-      setupGameLogicHooks();
-      setOnGameInitialize(_ => {
+      gameLogicHooks.on('initialize', () => {
         headerUIHook.setup(<ExtraHeader></ExtraHeader>);
         canvasUIHook.setup(<CanvasOverlay></CanvasOverlay>)
         multiplayer.setup();
         snakeLoop.setup();
       });
+      gameLogicHooks.setup();
     } catch (exc) {
       console.error('[GSM] Main error:', exc);
     }

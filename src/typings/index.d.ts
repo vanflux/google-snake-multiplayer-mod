@@ -31,8 +31,12 @@ declare class GameInstance {
   public snakeBodyConfig: SnakeBodyConfig;
   public gameClass1: GameClass1;
   public mapObjectHolder: MapObjectHolder;
+  public lastInvencibilityTime: number;
   constructor(settings: Settings, menu: Menu, header: Header);
   public update(time: number);
+  public checkDeathCollision(pos: Vector2);
+  public die();
+  public reset();
 }
 
 declare class Vector2 {
@@ -40,6 +44,7 @@ declare class Vector2 {
   public y: number;
   constructor(x: number, y: number);
   public clone(): Vector2;
+  public equals(other: Vector2): boolean;
 }
 
 declare class BoardRenderer {
@@ -47,6 +52,8 @@ declare class BoardRenderer {
 }
 
 declare class PlayerRenderer {
+  public canvasCtx: CanvasRenderingContext2D;
+  public instance: GameInstance;
   constructor(gameInstance: GameInstance, settings: Settings, canvasCtx: CanvasRenderingContext2D);
   public render(renderPart: number, b1: boolean, resolution: { width: number, height: number });
 }
