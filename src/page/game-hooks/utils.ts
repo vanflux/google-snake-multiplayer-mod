@@ -26,21 +26,9 @@ export function detour(
     try {
       if (detourFn.call(this, ...args)) return;
     } catch(exc) {
-      console.error('Detour error', fnKey, exc);
+      console.error('[GSM] Detour error', fnKey, exc);
     }
     return original.call(this, ...args);
   };
   return () => (obj[fnKey] = original);
-}
-
-export function transformObject(obj: any, transform: (...args: any) => any = x=>x) {
-  const newObj: any = {};
-  for (const key in obj) newObj[key] = transform(obj[key]);
-  return newObj;
-}
-
-export function extractSubObject(obj: any, keys: string[], transform: (...args: any) => any = x=>x) {
-  const newObj: any = {};
-  for (const key of keys) newObj[key] = transform(obj[key]);
-  return newObj;
 }

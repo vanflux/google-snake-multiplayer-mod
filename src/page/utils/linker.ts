@@ -114,9 +114,10 @@ class LinkerHelper {
       for (const name in _config.maps) {
         const subConfig = _config.maps[name];
         if (Object.keys(subConfig.maps || {}).length > 0) {
-          dest[name] = createProxy(dest[name], subConfig);
+          createProxy(dest[name], subConfig);
         } else {
-          if (dest.hasOwnProperty(name)) break;
+          if (dest?.hasOwnProperty(name)) continue;
+          if (subConfig.rawName === name) continue;
           Object.defineProperty(dest, name, {
             get: () => dest[subConfig.rawName!],
             set: (v) => dest[subConfig.rawName!] = v,

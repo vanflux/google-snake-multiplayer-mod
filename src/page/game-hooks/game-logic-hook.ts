@@ -5,12 +5,12 @@ import { detour, findChildKeyInObject } from "./utils";
 
 // This entire file is bizarre, it makes all necessary hooks to the game
 
-export let gameInstance: any;
-export let lastBoardRenderCtx: any;
+export let gameInstance: GameInstance;
+export let lastBoardRenderCtx: BoardRenderer;
 
-let onGameInitialize: (lastBoardRenderCtx: any, boardRenderArgs: any)=>any;
-let onGameBeforeBoardRender: (boardRenderCtx: any, boardRenderArgs: any)=>any;
-let onGameBeforeMainPlayerRender: (playerRenderCtx: any, playerRenderArgs: any)=>any;
+let onGameInitialize: (lastBoardRenderCtx: BoardRenderer, boardRenderArgs: any)=>any;
+let onGameBeforeBoardRender: (boardRenderCtx: BoardRenderer, boardRenderArgs: any)=>any;
+let onGameBeforeMainPlayerRender: (playerRenderCtx: PlayerRenderer, playerRenderArgs: any)=>any;
 
 export const setOnGameInitialize = (handler: typeof onGameInitialize) => onGameInitialize = handler;
 export const setOnGameBeforeBoardRender = (handler: typeof onGameBeforeBoardRender) => onGameBeforeBoardRender = handler;
@@ -23,18 +23,18 @@ export function setupGameLogicHooks() {
   const start = Date.now();
 
   // Collectable proxy
-  const [collF1, collF2, collF3, collF4, collF5, collF6, collF7, collF8] =
+  const [collPosition, collAnimationStep, collType, collAppearing, collVelocity, collF6, collIsPoisoned, collIsGhost] =
     linkerHelper.findValues(/\{([\w\$]+):new [\w\$]+\(Math\.floor\(3.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*\}/, 8, 'function');
   window.createCollectableProxy = linkerHelper.createProxyFactory({
     maps: {
-      f1: { rawName: collF1 },
-      f2: { rawName: collF2 },
-      f3: { rawName: collF3 },
-      f4: { rawName: collF4 },
-      f5: { rawName: collF5 },
+      position: { rawName: collPosition },
+      animationStep: { rawName: collAnimationStep },
+      type: { rawName: collType },
+      appearing: { rawName: collAppearing },
+      velocity: { rawName: collVelocity },
       f6: { rawName: collF6 },
-      f7: { rawName: collF7 },
-      f8: { rawName: collF8 },
+      isPoisoned: { rawName: collIsPoisoned },
+      isGhost: { rawName: collIsGhost },
     },
   });
 
@@ -53,7 +53,7 @@ export function setupGameLogicHooks() {
   window.AssetRenderer = linkerHelper.findClassByMethod('render', [5], [/this\.context\.drawImage/, /this\.context\.translate/, /this\.context\.rotate/]);
   window.GameInstance = linkerHelper.findClassByMethod('tick', [0], []);
 
-  linkerHelper.proxyProp(BoardRenderer, 'snakeBodyConfig', linkerHelper.findValue(new RegExp(`new ${escapeRegex(PlayerRenderer.name)}\\(this\\.[\\w\\$]+,this.settings,this.([\\w\\$]+)\\)`), 'class'));
+  linkerHelper.proxyProp(BoardRenderer, 'canvasCtx', linkerHelper.findValue(new RegExp(`new ${escapeRegex(PlayerRenderer.name)}\\(this\\.[\\w\\$]+,this.settings,this.([\\w\\$]+)\\)`), 'class'));
   linkerHelper.proxyProp(MapObjectHolder, 'objs', linkerHelper.findValue(/this\.([\w\$]+)\.length-1/, 'method', MapObjectHolder));
   linkerHelper.proxyProp(SnakeBodyConfig, 'bodyPoses', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)\\.push\\(new ${escapeRegex(Vector2.name)}\\(Math\\.floor\\(`), 'method', SnakeBodyConfig));
   linkerHelper.proxyProp(SnakeBodyConfig, 'tailPos', linkerHelper.findValue(/this\.([\w\$]+)=this\.[\w\$]+\[2\]/, 'method', SnakeBodyConfig));
