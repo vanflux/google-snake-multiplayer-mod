@@ -31,7 +31,9 @@ declare class GameInstance {
   public snakeBodyConfig: SnakeBodyConfig;
   public gameClass1: GameClass1;
   public mapObjectHolder: MapObjectHolder;
-  public lastInvencibilityTime: number;
+  public lastInvencibilityTime: number; // Mod variable
+  public latency: number; // Mod variable
+  public receivedData: boolean; // Mod variable
   constructor(settings: Settings, menu: Menu, header: Header);
   public update(time: number);
   public checkDeathCollision(pos: Vector2);

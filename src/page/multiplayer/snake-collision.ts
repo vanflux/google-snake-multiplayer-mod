@@ -1,7 +1,7 @@
-import { multiplayer } from ".";
 import { gameInstance } from "../game-hooks/game-logic-hook";
 import { detour } from "../game-hooks/utils";
 import { addCleanupFn } from "../utils/cleanup";
+import { gameSharing } from "./game-sharing";
 import { nextPosition } from "./utils";
 
 class SnakeCollision {
@@ -24,7 +24,7 @@ class SnakeCollision {
     addCleanupFn(detour(GameInstance.prototype, 'checkDeathCollision', function (pos) {
       const snakeBodyConfig = this.snakeBodyConfig;
       if (Date.now() - this.lastInvencibilityTime > 3500) {
-        const otherInstances = [gameInstance, ...[...multiplayer.getOthers().values()].map(x => x.instance)].filter(x => x !== this);
+        const otherInstances = [gameInstance, ...[...gameSharing.others.values()].map(x => x.instance)].filter(x => x !== this);
         otherInstances.forEach(instance => {
           if (Date.now() - instance.lastInvencibilityTime < 3500) return;
           instance.snakeBodyConfig.bodyPoses.forEach((pos, i, arr) => {
