@@ -46,8 +46,14 @@ If you already has a server to connect go to [Browser Setup](#browser-setup), if
 - Load the extension located on `build/dev` on your browser
 - Run server with `npm run server`
 
-## Problems/improvements
+## Network
 
-- Each player sends around 5 data objects to the server per second, each data object is around 1.5kB. If you have 2 players playing for an hour on the server, the outgoing and the incoming network is estimated on 54MB. Which stills pretty big for this game. It can be improved by serializing only the differences of the game instance, not the "entire" object, but it is NOT implemented at this point.
+The networking has been optimized since v0.1.2, we are not serializing the entire game instance, we are sending only the needed data, thanks to the linker by making the class field names more friendly.
+
+- 2 Players playing an hour:
+  - Each player uploads 200 B/packet * 5 packets/s = 1kB/s
+  - Total download and upload(SEPARATELY) = (200 * 5 * 2 * 60 * 60) / 1000000 = 7.2 MB/hour
+
+## Problems/improvements
 
 - The foods are being shared, but sometimes flickering occurs, maybe implement this logic on server-side? Or electing a client to be leader responsible for generation this? The second solution is terrible for hackers(I think it isnt a deal here), but is the most easy and problem-free.

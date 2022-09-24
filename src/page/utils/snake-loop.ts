@@ -1,4 +1,4 @@
-import { gameInstanceSnake } from "../game-hooks/game-logic-hook";
+import { gameInstance } from "../game-hooks/game-logic-hook";
 import { addCleanupFn } from "./cleanup";
 
 class SnakeLoop {
@@ -11,7 +11,7 @@ class SnakeLoop {
     };
     const id = setInterval(() => {
       if (!window.snakeLoop) return;
-      gameInstanceSnake.direction = mapping[gameInstanceSnake.direction] || 'RIGHT';
+      gameInstance.snakeBodyConfig.direction = mapping[gameInstance.snakeBodyConfig.direction] || 'RIGHT';
       [...document.querySelectorAll('div > h2')].find(x => x.textContent === 'Play')?.parentElement?.click();
     }, Math.random() * 50 + 500);
     addCleanupFn(() => clearInterval(id));

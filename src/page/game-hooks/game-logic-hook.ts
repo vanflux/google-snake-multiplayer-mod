@@ -1,38 +1,16 @@
 import { addCleanupFn } from "../utils/cleanup";
-import { Class, detour, findChildKeyInObject, findChildKeysInObject, findClassByMethod } from "./utils";
+import { escapeRegex } from "../utils/escape-regex";
+import { linkerHelper } from "../utils/linker";
+import { detour, findChildKeyInObject } from "./utils";
 
 // This entire file is bizarre, it makes all necessary hooks to the game
 
-export let GameEngine: Class;
-export let Vector2: Class;
-export let BoardRenderer: Class;
-export let PlayerRenderer: Class;
-export let Settings: Class;
-export let Menu: Class
-export let Header: Class;
-export let MapObjectHolder: Class;
-export let SnakeBodyConfig: Class;
-export let GameClass1: Class; // FIXME: good naming
-export let GameInstance: Class;
-export let AssetRenderer: Class;
+export let gameInstance: GameInstance;
+export let lastBoardRenderCtx: BoardRenderer;
 
-export let gameInstance: any;
-export let gameInstanceSnake: any;
-export let gameInstanceSnakeKey: any;
-export let gameInstanceSnakeEyeColorKey: any;
-export let gameInstanceMapObjectHolderKey: any;
-export let gameInstanceMapObjectHolderObjsKey: any;
-export let gameInstanceXaKey: any; // FIXME: good naming
-export let gameInstanceSaKey: any; // FIXME: good naming
-export let gameEngineGameLoopFnKey: any;
-export let gameInstanceClass1Key: any;
-export let lastBoardRenderCtx: any;
-export let changeAssetColorKey: any;
-export let changeAssetColor: any;
-
-let onGameInitialize: (lastBoardRenderCtx: any, boardRenderArgs: any)=>any;
-let onGameBeforeBoardRender: (boardRenderCtx: any, boardRenderArgs: any)=>any;
-let onGameBeforeMainPlayerRender: (playerRenderCtx: any, playerRenderArgs: any)=>any;
+let onGameInitialize: (lastBoardRenderCtx: BoardRenderer, boardRenderArgs: any)=>any;
+let onGameBeforeBoardRender: (boardRenderCtx: BoardRenderer, boardRenderArgs: any)=>any;
+let onGameBeforeMainPlayerRender: (playerRenderCtx: PlayerRenderer, playerRenderArgs: any)=>any;
 
 export const setOnGameInitialize = (handler: typeof onGameInitialize) => onGameInitialize = handler;
 export const setOnGameBeforeBoardRender = (handler: typeof onGameBeforeBoardRender) => onGameBeforeBoardRender = handler;
@@ -43,17 +21,53 @@ let boardRenderStarted = false;
 
 export function setupGameLogicHooks() {
   const start = Date.now();
-  GameEngine = findClassByMethod('render', 2, x => x.includes('"visible":"hidden"') && x.includes('.render(a,b)'));
-  Vector2 = findClassByMethod('clone', 0, x => x.includes('(this.x,this.y)'));
-  BoardRenderer = findClassByMethod('render', 2, x => x.includes('this.context.fillRect(0,0,this.context.canvas.width,this.context.canvas.height);'));
-  PlayerRenderer = findClassByMethod('render', 3, x => x.includes('RIGHT') && x.includes('DOWN'));
-  Settings = findClassByMethod('toString', 0, x => x.includes('v=10,color='));
-  Menu = findClassByMethod('update', 0, x => x.includes('this.isVisible()') && x.includes('settings'));
-  Header = findClassByMethod(/.*/, 1, x => x.includes('images/icons/material'));
-  MapObjectHolder = findClassByMethod('shuffle', 1, () => true);
-  SnakeBodyConfig = findClassByMethod('reset', 0, x => x.includes('"RIGHT"') && x.includes('this.direction') && x.includes('.push(new'));
-  GameClass1 = findClassByMethod('reset', 0, x => x.includes('.push([])') && x.includes(`new ${Vector2.name}(0,0)`));
-  AssetRenderer = findClassByMethod('render', 5, x => x.includes('this.context.drawImage') && x.includes('this.context.translate') && x.includes('this.context.rotate'));
+
+  // Collectable proxy
+  const [collPosition, collAnimationStep, collType, collAppearing, collVelocity, collF6, collIsPoisoned, collIsGhost] =
+    linkerHelper.findValues(/\{([\w\$]+):new [\w\$]+\(Math\.floor\(3.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*\}/, 8, 'function');
+  window.createCollectableProxy = linkerHelper.createProxyFactory({
+    maps: {
+      position: { rawName: collPosition },
+      animationStep: { rawName: collAnimationStep },
+      type: { rawName: collType },
+      appearing: { rawName: collAppearing },
+      velocity: { rawName: collVelocity },
+      f6: { rawName: collF6 },
+      isPoisoned: { rawName: collIsPoisoned },
+      isGhost: { rawName: collIsGhost },
+    },
+  });
+
+  window.changeAssetColor = linkerHelper.findFunction(/.*/, [3,4], [/\.getImageData\(0,0/]);
+
+  window.GameEngine = linkerHelper.findClassByMethod('render', [2], [/"visible":"hidden"/, /\.render\(a,b\)/]);
+  window.Vector2 = linkerHelper.findClassByMethod('clone', [0], [/\(this\.x,this\.y\)/]);
+  window.PlayerRenderer = linkerHelper.findClassByMethod('render', [3], [/RIGHT/, /DOWN/]);
+  window.BoardRenderer = linkerHelper.findClassByMethod('render', [2], [/this\.context\.fillRect\(0,0,this\.context\.canvas\.width,this\.context\.canvas\.height\);/]);
+  window.Settings = linkerHelper.findClassByMethod('toString', [0], [/v=10,color=/]);
+  window.Menu = linkerHelper.findClassByMethod('update', [0], [/this\.isVisible\(\)/, /settings/]);
+  window.Header = linkerHelper.findClassByMethod(/.*/, [1], [/images\/icons\/material/]);
+  window.MapObjectHolder = linkerHelper.findClassByMethod('shuffle', [1], []);
+  window.SnakeBodyConfig = linkerHelper.findClassByMethod('reset', [0], [/"RIGHT"/, /this\.direction/, /\.push\(new/]);
+  window.GameClass1 = linkerHelper.findClassByMethod('reset', [0], [/\.push\(\[\]\)/, new RegExp(`new ${escapeRegex(Vector2.name)}\\(0,0\\)`)]);
+  window.AssetRenderer = linkerHelper.findClassByMethod('render', [5], [/this\.context\.drawImage/, /this\.context\.translate/, /this\.context\.rotate/]);
+  window.GameInstance = linkerHelper.findClassByMethod('tick', [0], []);
+
+  linkerHelper.proxyProp(BoardRenderer, 'canvasCtx', linkerHelper.findValue(new RegExp(`new ${escapeRegex(PlayerRenderer.name)}\\(this\\.[\\w\\$]+,this.settings,this.([\\w\\$]+)\\)`), 'class'));
+  linkerHelper.proxyProp(MapObjectHolder, 'objs', linkerHelper.findValue(/this\.([\w\$]+)\.length-1/, 'method', MapObjectHolder));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'bodyPoses', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)\\.push\\(new ${escapeRegex(Vector2.name)}\\(Math\\.floor\\(`), 'method', SnakeBodyConfig));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'tailPos', linkerHelper.findValue(/this\.([\w\$]+)=this\.[\w\$]+\[2\]/, 'method', SnakeBodyConfig));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'oldDirection', linkerHelper.findValue(/this\.direction="NONE";this\.([\w\$]+)="RIGHT"/, 'method', SnakeBodyConfig));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'directionChanged', linkerHelper.findValue(/this\.[\w\$]+="NONE";this\.([\w\$]+)=!1/, 'method', SnakeBodyConfig));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'deathHeadState', linkerHelper.findValue(/this\.[\w\$]+=\[\];this\.([\w\$]+)=0/, 'method', SnakeBodyConfig));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'color1', linkerHelper.findValue(/this\.([\w\$]+)=[\w\$]+\[0\]\[0\]/, 'class', SnakeBodyConfig));
+  linkerHelper.proxyProp(SnakeBodyConfig, 'color2', linkerHelper.findValue(/this\.([\w\$]+)=[\w\$]+\[0\]\[1\]/, 'class', SnakeBodyConfig));
+  linkerHelper.proxyProp(GameInstance, 'headState', linkerHelper.findValue(/\(this.([\w\$]+)\|\|this\.[\w\$]+\)/, 'method', GameInstance));
+  linkerHelper.proxyProp(GameInstance, 'xaa', linkerHelper.findValue(/this\.([\w\$]+)>=this\.[\w\$]+;\)this\.[\w\$]+\+=this.[\w\$]+/, 'method', GameInstance));
+  linkerHelper.proxyProp(GameInstance, 'saa', linkerHelper.findValue(/this\.[\w\$]+>=this\.([\w\$]+);\)this\.[\w\$]+\+=this.[\w\$]+/, 'method', GameInstance));
+  linkerHelper.proxyProp(GameInstance, 'gameClass1', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(GameClass1.name)}\\(`), 'class', GameInstance));
+  linkerHelper.proxyProp(GameInstance, 'snakeBodyConfig', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(SnakeBodyConfig.name)}\\(`), 'class', GameInstance));
+  linkerHelper.proxyProp(GameInstance, 'mapObjectHolder', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(MapObjectHolder.name)}\\(`), 'class', GameInstance));
 
   const end = Date.now();
   console.log('[GSM] Game hooks class by function took', end-start, 'ms');
@@ -65,23 +79,8 @@ export function setupGameLogicHooks() {
     if (!initialized) {
       initialized = true;
       console.log('[GSM] Game initialized by game render hook');
-
-      const instanceKey = findChildKeyInObject(this, x => x.ticks !== undefined && x.settings !== undefined && x.menu !== undefined);
+      const instanceKey = findChildKeyInObject(this, x => x instanceof GameInstance);
       gameInstance = this[instanceKey];
-      GameInstance = gameInstance.constructor;
-      gameInstanceSnakeKey = findChildKeyInObject(gameInstance, x => x.direction !== undefined && x.settings !== undefined);
-      gameInstanceSnake = gameInstance[gameInstanceSnakeKey];
-      gameInstanceSnakeEyeColorKey = findChildKeysInObject(gameInstanceSnake, x => typeof x === 'string' && !!x.match(/\#[a-fA-F0-9]{3,6}/))[0];
-      gameInstanceMapObjectHolderKey = findChildKeyInObject(gameInstance, x => x instanceof MapObjectHolder);
-      gameInstanceMapObjectHolderObjsKey = MapObjectHolder.prototype.shuffle.toString().match(/this\.(\w+)\.length/)?.[1];
-      const xaSaRegex = new RegExp(`\\(\\w+\\-this\\.${instanceKey}\\.(\\w+)\\)\\/this\\.${instanceKey}\\.(\\w+)`);
-      gameEngineGameLoopFnKey = findChildKeyInObject(GameEngine.prototype, x => typeof x === 'function' && x.toString().match(xaSaRegex));
-      [, gameInstanceXaKey, gameInstanceSaKey] = GameEngine.prototype[gameEngineGameLoopFnKey].toString().match(xaSaRegex);
-      if (!gameInstanceMapObjectHolderObjsKey) throw new Error('[GSM] Failed to find object holder objs key!');
-      gameInstanceClass1Key = findChildKeyInObject(gameInstance, x => x instanceof GameClass1);
-      changeAssetColorKey = findChildKeyInObject(window, x => typeof x === 'function' && x.toString().includes('.getImageData(0,0'));
-      changeAssetColor = window[changeAssetColorKey];
-      
       console.log('[GSM] Game instance:', gameInstance);
 
       try {
