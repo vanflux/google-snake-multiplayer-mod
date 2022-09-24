@@ -1,8 +1,8 @@
 Version $VERSION released! 🥳
 
 Changes:
-- Fix on class finding, finding js classes!
-- Bookmark mod loading support(inspired on DarkSnakeGang)
+- Heavy network optimization.
+- Fixed a major problem that don't allow different browsers to play together, thanks to the linker by deobfuscating and transforming bizarre class field names into a common thing. Oh, google generates a different JS bundle for each client... not each, but some clients... ahh.
 
 Features:
 - Multiplayer support!
