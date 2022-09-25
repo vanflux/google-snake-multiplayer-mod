@@ -2,6 +2,7 @@ Version $VERSION released! 🥳
 
 Changes:
 - Food flickering fixed!
+- **Breaking server changes!**
 
 Features:
 - Multiplayer support!
