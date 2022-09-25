@@ -10,15 +10,15 @@ class SnakeCollision {
       // Update last invencibility of the player
       if (this.instance === gameInstance && gameInstance.snakeBodyConfig.direction === 'NONE') gameInstance.lastInvencibilityTime = Date.now();
 
-      // Blink players when they are invencible changing the globalAlpha
+      // Blink players when they are invencible changing the style using canvas filters
       const invencibilityTimeDelta = Date.now() - this.instance.lastInvencibilityTime;
       if (invencibilityTimeDelta < 3500) {
         const blink = (Math.floor(invencibilityTimeDelta / 500) % 2) === 0;
-        this.canvasCtx.globalAlpha = blink ? 0.5 : 1;
+        this.canvasCtx.filter = blink ? `grayscale(90%) brightness(1.2) contrast(30%)` : 'none';
       }
     }, function (a: any, b: any, resolution: any) {
-      // Return globalAlpha to normal
-      this.canvasCtx.globalAlpha = 1;
+      // Return normal style
+        this.canvasCtx.filter = 'none';
     }));
     
     addCleanupFn(detour(GameInstance.prototype, 'checkDeathCollision', function (pos) {

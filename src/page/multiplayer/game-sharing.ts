@@ -158,7 +158,7 @@ export class GameSharingOther {
   }
   
   updateData (serializedData: GameInstance) {
-    const oldEyeColor = this.instance?.snakeBodyConfig?.color1;
+    const oldColor1 = this.instance?.snakeBodyConfig?.color1;
 
     this.instance.xaa = serializedData.xaa;
     this.instance.saa = serializedData.saa;
@@ -190,11 +190,11 @@ export class GameSharingOther {
       });
     }
     
-    const newEyeColor = this.instance?.snakeBodyConfig?.color1;
-    if (newEyeColor !== oldEyeColor) {
+    const newColor1 = this.instance?.snakeBodyConfig?.color1;
+    if (newColor1 !== oldColor1) {
       // Regenerate all assets based on eye color
-      findChildKeysInObject(this.instance, x => x instanceof AssetRenderer).forEach(key => {
-        changeAssetColor((this.instance as any)[key], '#5282F2', newEyeColor);
+      findChildKeysInObject(this.renderer, x => x instanceof AssetRenderer).forEach(key => {
+        changeAssetColor((this.renderer as any)[key], '#5282F2', newColor1);
       });
     }
     this.gameSharing.checkObjsChanged();
