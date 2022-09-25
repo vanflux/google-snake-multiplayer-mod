@@ -42,7 +42,8 @@ export class Connection extends EventEmitter {
     this.forwardEvent('latency');
     this.forwardEvent('other_connect');
     this.forwardEvent('other_disconnect');
-    this.forwardEvent('other_data');
+    this.forwardEvent('other_snake_data');
+    this.forwardEvent('other_collectables_data');
     this.forwardEvent('other_latency');
     this.forwardEvent('connect_error');
   }

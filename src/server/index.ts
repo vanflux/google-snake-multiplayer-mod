@@ -15,8 +15,12 @@ server.on('connection', (socket) => {
     [...server.sockets.sockets.values()].map(s => s.id).filter(id => socket.id !== id).forEach(id => socket.emit('other_connect', {id}));
     socket.broadcast.emit('other_connect', {id: socket.id});
 
-    socket.on('data', (data) => {
-        socket.broadcast.emit('other_data', {id: socket.id, data});
+    socket.on('snake_data', (data) => {
+        socket.broadcast.emit('other_snake_data', {id: socket.id, data});
+    });
+    
+    socket.on('collectables_data', (data) => {
+        socket.broadcast.emit('other_collectables_data', {id: socket.id, data});
     });
 
     socket.on('disconnect', () => {

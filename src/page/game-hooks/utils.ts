@@ -16,19 +16,21 @@ export function findChildKeyInObject(obj: any, fn: (child: any) => boolean) {
   return keys[0];
 }
 
+export type DetourFn = (this: any, ...args: any) => (void | undefined | { return?: any });
+
 export function detour(
   obj: any,
   fnKey: string,
-  beforeFn?: (this: any, ...args: any) => any,
-  afterFn?: (this: any, ...args: any) => any,
+  beforeFn?: DetourFn,
+  afterFn?: DetourFn,
 ) {
   const originalFnKey = `___o${fnKey}`;
   const beforeFnListKey = `___b${fnKey}`;
   const afterFnListKey = `___a${fnKey}`;
   const isFirst = !obj[originalFnKey];
   const originalFn = obj[originalFnKey] = (obj[originalFnKey] || obj[fnKey]);
-  const beforeFnList = obj[beforeFnListKey] = (obj[beforeFnListKey] || []);
-  const afterFnList = obj[afterFnListKey] = (obj[afterFnListKey] || []);
+  const beforeFnList: DetourFn[] = obj[beforeFnListKey] = (obj[beforeFnListKey] || []);
+  const afterFnList: DetourFn[] = obj[afterFnListKey] = (obj[afterFnListKey] || []);
   beforeFn && beforeFnList.push(beforeFn);
   afterFn && afterFnList.push(afterFn);
 
@@ -37,7 +39,7 @@ export function detour(
       try {
         for (const detourFn of beforeFnList) {
           const result = detourFn.call(this, ...args);
-          if (result) return;
+          if (result && result.hasOwnProperty('return')) return result.return;
         }
       } catch(exc) {
         console.error('[GSM] Detour before fn list error', fnKey, exc);
@@ -46,7 +48,7 @@ export function detour(
       try {
         for (const detourFn of afterFnList) {
           const result = detourFn.call(this, ...args);
-          if (result) return;
+          if (result && result.hasOwnProperty('return')) return result.return;
         }
       } catch(exc) {
         console.error('[GSM] Detour after fn list error', fnKey, exc);

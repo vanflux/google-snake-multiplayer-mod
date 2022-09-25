@@ -36,9 +36,11 @@ declare class GameInstance {
   public receivedData: boolean; // Mod variable
   constructor(settings: Settings, menu: Menu, header: Header);
   public update(time: number);
+  public tick();
   public checkDeathCollision(pos: Vector2);
   public die();
   public reset();
+  public collectAndSpawnNextCollectable(a?: any, b?: any, c?: any);
 }
 
 declare class Vector2 {
@@ -110,6 +112,7 @@ interface Collectable {
 
 // Game functions
 declare function changeAssetColor(assetRenderer: AssetRenderer, color: string, c?: any, d?: any): void;
+declare function spawnCollectableAt(a?: any, b?: any, pos: Vector2): void;
 
 // Proxies
 declare function createCollectableProxy(collectable: Collectable): Collectable;

@@ -33,7 +33,8 @@ class GameLogicHooks extends EventEmitter {
       },
     });
 
-    window.changeAssetColor = linkerHelper.findFunction(/.*/, [3,4], [/\.getImageData\(0,0/]);
+    window.changeAssetColor = linkerHelper.findFunction(/.*/, [3, 4], [/\.getImageData\(0,0/]);
+    window.spawnCollectableAt = linkerHelper.findFunction(/.*/, [3], [/[\w\$]+\.[\w\$]+\[b\]\.[\w\$]+=[\w\$]+;[\n\s]*[\w\$]+\.[\w\$]+\[b\]\.[\w\$]+=[\w\$]+;[\n\s]*[\w\$]+\.[\w\$]+\[b\]\.[\w\$]+.*[\n\s]*.*[\w\$]+\(\)/]);
 
     window.GameEngine = linkerHelper.findClassByMethod('render', [2], [/"visible":"hidden"/, /\.render\(a,b\)/]);
     window.Vector2 = linkerHelper.findClassByMethod('clone', [0], [/\(this\.x,this\.y\)/]);
@@ -67,9 +68,10 @@ class GameLogicHooks extends EventEmitter {
     linkerHelper.proxyProp(GameInstance, 'mapObjectHolder', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(MapObjectHolder.name)}\\(`), 'class', GameInstance));
     linkerHelper.proxyProp(GameInstance, 'checkDeathCollision', linkerHelper.findMethodName(GameInstance, /.*/, [1], [/for\(var [\w\$]+=1;[\w\$]+<this\.[\w\$]+\.[\w\$]+\.length-1;[\w\$]+\+\+\)/]));
     linkerHelper.proxyProp(GameInstance, 'die', linkerHelper.findMethodName(GameInstance, /.*/, [0], [/[\w\$]+\.[\w\$]+\.play\(\);/, /[\w\$]+\.[\w\$]+=[\w\$]+\.[\w\$]+\[0\]\.clone\(\)/, /"RIGHT"===[\w\$]+.direction/, /Math\.PI/]));
+    linkerHelper.proxyProp(GameInstance, 'collectAndSpawnNextCollectable', linkerHelper.findMethodName(GameInstance, /.*/, [3], [/\.sort\(/, new RegExp(escapeRegex(spawnCollectableAt.name))]));
 
     const end = Date.now();
-    console.log('[GSM] Game hooks class by function took', end-start, 'ms');
+    console.log('[GSM] Game hooks class by function took', end - start, 'ms');
 
     addCleanupFn(detour(BoardRenderer.prototype, 'render', function (...args: any) {
       boardRenderStarted = true;
@@ -84,7 +86,7 @@ class GameLogicHooks extends EventEmitter {
 
         try {
           self.emit('initialize', this, args);
-        } catch(exc) {
+        } catch (exc) {
           console.error('[GSM] Game initialize error:', exc);
         }
       }

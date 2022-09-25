@@ -38,10 +38,15 @@ class GameSharing extends EventEmitter {
       this.others.delete(id);
       this.emit('others_changed', this.others);
     });
-    connection.on('other_data', ({id, data}) => {
+    connection.on('other_snake_data', ({id, data}) => {
       const other = this.others.get(id);
       if (!other) return;
       other.updateData(data);
+    });
+    connection.on('other_collectables_data', ({id, data}) => {
+      const other = this.others.get(id);
+      if (!other) return;
+      this.updateCollectables(data);
     });
     connection.on('latency', ({latency}) => {
       gameSharing.updateLatency(latency);
@@ -59,8 +64,8 @@ class GameSharing extends EventEmitter {
       if (self.lastDataSend === undefined || Date.now() - self.lastDataSend > 250 || self.lastDirection !== curDirection) {
         self.lastDataSend = Date.now();
         self.lastDirection = curDirection;
-        const serializedData = gameSharing.getThisData();
-        connection.send('data', serializedData);
+        const serializedData = gameSharing.getThisSnakeData();
+        connection.send('snake_data', serializedData);
       }
     }));
 
@@ -71,27 +76,40 @@ class GameSharing extends EventEmitter {
         self.others.forEach(other => other.render(resolution));
       }
     }));
+
+    addCleanupFn(detour(GameInstance.prototype, 'collectAndSpawnNextCollectable', function (a: any, b: any, c: any) {
+      if (this !== gameInstance) {
+        return { return: true }; // Cancel original "collectAndSpawnNextCollectable" call and return true to bypass collection
+      }
+    }, function (a: any, b: any, c: any) {
+      if (this === gameInstance) {
+        const serializedData = gameSharing.getThisCollectablesData();
+        connection.send('collectables_data', serializedData);
+      }
+    }));
   }
   
-  checkObjsChanged() {
-    const newObjs = gameInstance?.mapObjectHolder?.objs;
-    if (!newObjs || newObjs.length === 0) return false;
-    for (let i = 0; i < newObjs.length; i++) {
-      const proxiedNewItem = createCollectableProxy(newObjs[i] || {});
-      const proxiedOldItem = createCollectableProxy(this.oldObjs[i] || {});
-      if (proxiedNewItem.appearing !== proxiedOldItem.appearing || proxiedNewItem.position !== proxiedOldItem.position) {
-        this.oldObjs = newObjs?.map(x => ({...x}));
-        return true;
-      }
-    }
-    return false;
-  };
+  private updateCollectables(data: Collectable[]) {
+    gameInstance.mapObjectHolder.objs.length = data.length;
+    data.forEach((x, i) => {
+      if (!gameInstance.mapObjectHolder.objs[i]) gameInstance.mapObjectHolder.objs[i] = {} as Collectable;
+      const proxied = createCollectableProxy(gameInstance.mapObjectHolder.objs[i]);
+      proxied.position = new Vector2(x.position.x, x.position.y);
+      proxied.animationStep = x.animationStep;
+      proxied.type = x.type;
+      proxied.appearing = x.appearing;
+      proxied.velocity = new Vector2(x.velocity.x, x.velocity.y);
+      proxied.f6 = new Vector2(x.f6.x, x.f6.y);
+      proxied.isPoisoned = x.isPoisoned;
+      proxied.isGhost = x.isGhost;
+    });
+  }
   
   createOther() {
     return new GameSharingOther(this);
   }
 
-  getThisData() {
+  getThisSnakeData() {
     return {
       xaa: gameInstance.xaa,
       saa: gameInstance.saa,
@@ -107,24 +125,24 @@ class GameSharing extends EventEmitter {
         color1: gameInstance.snakeBodyConfig.color1, // Snake color 1
         color2: gameInstance.snakeBodyConfig.color2, // Snake color 2
       },
-      mapObjectHolder: this.checkObjsChanged() ? {
-        // Conditionally send map objects (only if changed)
-        objs: gameInstance?.mapObjectHolder?.objs?.map((x: any) => {
-          const proxiedObj = createCollectableProxy(x);
-          return {
-            position: { x: proxiedObj.position.x, y: proxiedObj.position.y },
-            animationStep: proxiedObj.animationStep,
-            type: proxiedObj.type,
-            appearing: proxiedObj.appearing,
-            velocity: { x: proxiedObj.velocity.x, y: proxiedObj.velocity.y },
-            f6: { x: proxiedObj.f6.x, y: proxiedObj.f6.y },
-            isPoisoned: proxiedObj.isPoisoned,
-            isGhost: proxiedObj.isGhost,
-          } as Collectable;
-        }),
-      } : undefined,
     };
   };
+
+  getThisCollectablesData() {
+    return gameInstance?.mapObjectHolder?.objs?.map((x: any) => {
+      const proxiedObj = createCollectableProxy(x);
+      return {
+        position: { x: proxiedObj.position.x, y: proxiedObj.position.y },
+        animationStep: proxiedObj.animationStep,
+        type: proxiedObj.type,
+        appearing: proxiedObj.appearing,
+        velocity: { x: proxiedObj.velocity.x, y: proxiedObj.velocity.y },
+        f6: { x: proxiedObj.f6.x, y: proxiedObj.f6.y },
+        isPoisoned: proxiedObj.isPoisoned,
+        isGhost: proxiedObj.isGhost,
+      } as Collectable;
+    });
+  }
 
   updateLatency(newLatency: number) {
     gameInstance.latency = newLatency;
@@ -157,47 +175,31 @@ export class GameSharingOther {
     console.log('[GSM] Other instance:', this.instance);
   }
   
-  updateData (serializedData: GameInstance) {
+  updateData(data: GameInstance) {
     const oldColor1 = this.instance?.snakeBodyConfig?.color1;
 
-    this.instance.xaa = serializedData.xaa;
-    this.instance.saa = serializedData.saa;
-    this.instance.headState = serializedData.headState;
-    this.instance.lastInvencibilityTime = serializedData.lastInvencibilityTime;
-    this.instance.snakeBodyConfig.headState = serializedData.snakeBodyConfig.headState;
-    this.instance.snakeBodyConfig.bodyPoses.length = serializedData.snakeBodyConfig.bodyPoses.length;
-    serializedData.snakeBodyConfig.bodyPoses.forEach((x, i) => this.instance.snakeBodyConfig.bodyPoses[i] = new Vector2(x.x, x.y));
-    this.instance.snakeBodyConfig.tailPos = new Vector2(serializedData.snakeBodyConfig.tailPos.x, serializedData.snakeBodyConfig.tailPos.y);
-    this.instance.snakeBodyConfig.direction = serializedData.snakeBodyConfig.direction;
-    this.instance.snakeBodyConfig.oldDirection = serializedData.snakeBodyConfig.oldDirection;
-    this.instance.snakeBodyConfig.directionChanged = serializedData.snakeBodyConfig.directionChanged;
-    this.instance.snakeBodyConfig.deathHeadState = serializedData.snakeBodyConfig.deathHeadState;
-    this.instance.snakeBodyConfig.color1 = serializedData.snakeBodyConfig.color1;
-    this.instance.snakeBodyConfig.color2 = serializedData.snakeBodyConfig.color2;
-    if (serializedData.mapObjectHolder?.objs) {
-      this.instance.mapObjectHolder.objs.length = serializedData.mapObjectHolder.objs.length;
-      serializedData.mapObjectHolder.objs.forEach((x, i) => {
-        if (!this.instance.mapObjectHolder.objs[i]) this.instance.mapObjectHolder.objs[i] = {} as Collectable;
-        const proxied = createCollectableProxy(this.instance.mapObjectHolder.objs[i]);
-        proxied.position = new Vector2(x.position.x, x.position.y);
-        proxied.animationStep = x.animationStep;
-        proxied.type = x.type;
-        proxied.appearing = x.appearing;
-        proxied.velocity = new Vector2(x.velocity.x, x.velocity.y);
-        proxied.f6 = new Vector2(x.f6.x, x.f6.y);
-        proxied.isPoisoned = x.isPoisoned;
-        proxied.isGhost = x.isGhost;
-      });
-    }
-    
+    this.instance.xaa = data.xaa;
+    this.instance.saa = data.saa;
+    this.instance.headState = data.headState;
+    this.instance.lastInvencibilityTime = data.lastInvencibilityTime;
+    this.instance.snakeBodyConfig.headState = data.snakeBodyConfig.headState;
+    this.instance.snakeBodyConfig.bodyPoses.length = data.snakeBodyConfig.bodyPoses.length;
+    data.snakeBodyConfig.bodyPoses.forEach((x, i) => this.instance.snakeBodyConfig.bodyPoses[i] = new Vector2(x.x, x.y));
+    this.instance.snakeBodyConfig.tailPos = new Vector2(data.snakeBodyConfig.tailPos.x, data.snakeBodyConfig.tailPos.y);
+    this.instance.snakeBodyConfig.direction = data.snakeBodyConfig.direction;
+    this.instance.snakeBodyConfig.oldDirection = data.snakeBodyConfig.oldDirection;
+    this.instance.snakeBodyConfig.directionChanged = data.snakeBodyConfig.directionChanged;
+    this.instance.snakeBodyConfig.deathHeadState = data.snakeBodyConfig.deathHeadState;
+    this.instance.snakeBodyConfig.color1 = data.snakeBodyConfig.color1;
+    this.instance.snakeBodyConfig.color2 = data.snakeBodyConfig.color2;
+
+    // Rebuild assets if needed
     const newColor1 = this.instance?.snakeBodyConfig?.color1;
     if (newColor1 !== oldColor1) {
-      // Regenerate all assets based on eye color
       findChildKeysInObject(this.renderer, x => x instanceof AssetRenderer).forEach(key => {
         changeAssetColor((this.renderer as any)[key], '#5282F2', newColor1);
       });
     }
-    this.gameSharing.checkObjsChanged();
     this.instance.receivedData = true;
   };
 

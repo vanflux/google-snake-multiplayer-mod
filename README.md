@@ -53,7 +53,3 @@ The networking has been optimized since v0.1.2, we are not serializing the entir
 - 2 Players playing an hour:
   - Each player uploads 200 B/packet * 5 packets/s = 1kB/s
   - Total download and upload(SEPARATELY) = (200 * 5 * 2 * 60 * 60) / 1000000 = 7.2 MB/hour
-
-## Problems/improvements
-
-- The foods are being shared, but sometimes flickering occurs, maybe implement this logic on server-side? Or electing a client to be leader responsible for generation this? The second solution is terrible for hackers(I think it isnt a deal here), but is the most easy and problem-free.

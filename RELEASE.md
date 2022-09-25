@@ -1,8 +1,7 @@
 Version $VERSION released! 🥳
 
 Changes:
-- Snake body collision added!
-- Refactor on game-sharing.
+- Food flickering fixed!
 
 Features:
 - Multiplayer support!
