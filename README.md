@@ -32,7 +32,7 @@ If you already has a server to connect go to [Browser Setup](#browser-setup), if
 - Open snake game
 - At the top on the right, click on the three-dots icon > Bookmarks > GSM Mod
 - Enjoy
-- **EXTRA**: If you are **NOT** connecting to "localhost" or "127.0.0.1" you will need to do the following to disable secure content:
+- **EXTRA**: If you are **NOT** connecting to the oficial game server or "localhost" or "127.0.0.1" you will need to do the following to disable secure content:
 
 ![Insecure content step 1](docs/images/insecure-content-1.png)
 ![Insecure content step 2](docs/images/insecure-content-2.png)
