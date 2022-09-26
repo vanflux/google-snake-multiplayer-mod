@@ -1,0 +1,6 @@
+public/
+docs/
+build/
+node_modules/
+.vscode/
+.github/

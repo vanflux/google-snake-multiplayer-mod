@@ -5,7 +5,8 @@
 	"scripts": {
 		"server": "ts-node-dev --respawn src/server/index.ts",
 		"start": "vfe start",
-		"build": "vfe build"
+		"build": "vfe build",
+		"build:server": "tsc"
 	},
 	"keywords": [],
 	"author": "",

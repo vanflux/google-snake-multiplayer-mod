@@ -3,7 +3,7 @@ import { connection } from '../../multiplayer/connection';
 import styles from './index.module.css';
 
 const defaultIp = '127.0.0.1';
-const defaultPort = 3512;
+const defaultPort = 8443;
 const defaultProtocol = 'ws';
 
 export function ExtraHeader() {

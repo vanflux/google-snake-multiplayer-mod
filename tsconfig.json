@@ -1,9 +1,11 @@
 {
   "compilerOptions": {
+    "outDir": "dist",
     "target": "ES2016",
     "module": "CommonJS",
     "jsx": "react",
     "moduleResolution": "Node",
+    "downlevelIteration": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,

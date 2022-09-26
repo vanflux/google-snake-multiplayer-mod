@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
 
-const port = 3512;
+const port = 8443;
 
 export const server = new Server({
     transports: ['websocket'],
