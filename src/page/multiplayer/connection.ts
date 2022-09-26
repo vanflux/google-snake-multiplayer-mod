@@ -30,10 +30,10 @@ export class Connection extends EventEmitter {
     this.destroyHandlerList = [];
   }
 
-  public connect(protocol: string, ip: string, port: number) {
+  public connect(url: string) {
     this.socket?.close();
     this.destroyHandlers();
-    this.socket = io(`${protocol}://${ip}:${port}`, {
+    this.socket = io(url, {
       secure: false,
       transports: ['websocket'],
     });

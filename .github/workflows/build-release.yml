@@ -22,6 +22,7 @@ jobs:
         run: npm run build
         env:
           VERSION: ${{ steps.vars.outputs.version }}
+          DEFAULT_SERVER_URL: wss://ws-gsm.vanflux.dev
       - name: Prepare mod artifact
         run: mv build/prod/chrome/raw/page.js gsm-mod.js
       - name: Build RELEASE_final.md

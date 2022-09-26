@@ -50,6 +50,7 @@ class GameSharing extends EventEmitter {
     });
     connection.on('latency', ({latency}) => {
       gameSharing.updateLatency(latency);
+      this.emit('latency_changed', latency);
     });
     connection.on('other_latency', ({id, latency}) => {
       const other = this.others.get(id);

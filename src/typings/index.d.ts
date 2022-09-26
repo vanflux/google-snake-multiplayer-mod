@@ -1,6 +1,7 @@
 declare module "*.css";
 
 declare var VERSION: string;
+declare var DEFAULT_SERVER_URL: string;
 
 declare interface Window {
   cleanup?(): void;

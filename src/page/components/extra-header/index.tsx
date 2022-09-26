@@ -2,14 +2,10 @@ import React, { KeyboardEvent, useEffect, useState } from 'react';
 import { connection } from '../../multiplayer/connection';
 import styles from './index.module.css';
 
-const defaultIp = '127.0.0.1';
-const defaultPort = 8443;
-const defaultProtocol = 'ws';
-
 export function ExtraHeader() {
   const [connected, setConnected] = useState(connection.connected);
   const [serverUrlError, setServerUrlError] = useState(false);
-  const [serverUrl, setServerUrl] = useState(`${defaultProtocol}://${defaultIp}:${defaultPort}`);
+  const [serverUrl, setServerUrl] = useState(DEFAULT_SERVER_URL);
 
   useEffect(() => {
     connection.on('connect', () => {
@@ -18,7 +14,7 @@ export function ExtraHeader() {
     connection.on('disconnect', () => {
       setConnected(false);
     });
-    connection.connect(defaultProtocol, defaultIp, defaultPort);
+    connection.connect(serverUrl);
   }, []);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -28,12 +24,12 @@ export function ExtraHeader() {
   const handleIpPortChange = (newServerUrl: string) => {
     setServerUrl(newServerUrl);
     if (newServerUrl !== serverUrl) {
-      const match = newServerUrl.match(/^(ws|wss):\/\/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(\d{1,5})$/);
+      const match = newServerUrl.match(/^(ws|wss):\/\/([^:]+)(?::(\d{1,5}))?$/);
       if (match) {
         setServerUrlError(false);
-        const [_, protocol, ip, portStr] = match;
-        console.log('[GSM] Trying to connect to', protocol, ip, portStr);
-        connection.connect(protocol, ip, Number(portStr));
+        const [url] = match;
+        console.log('[GSM] Trying to connect to', url);
+        connection.connect(url);
       } else {
         setServerUrlError(true);
       }
