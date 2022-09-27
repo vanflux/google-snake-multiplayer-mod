@@ -49,6 +49,7 @@ class GameLogicHooks extends EventEmitter {
     window.AssetRenderer = linkerHelper.findClassByMethod('render', [5], [/this\.context\.drawImage/, /this\.context\.translate/, /this\.context\.rotate/]);
     window.GameInstance = linkerHelper.findClassByMethod('tick', [0], []);
 
+    linkerHelper.proxyProp(GameEngine, 'skipTutorial', linkerHelper.findMethodName(GameEngine, /.*/, [0], [/"visibility","hidden"/, /200/]));
     linkerHelper.proxyProp(BoardRenderer, 'canvasCtx', linkerHelper.findValue(new RegExp(`new ${escapeRegex(PlayerRenderer.name)}\\(this\\.[\\w\\$]+,this.settings,this.([\\w\\$]+)\\)`), 'class'));
     linkerHelper.proxyProp(PlayerRenderer, 'canvasCtx', linkerHelper.findValue(/new [\w\$]+\("snake_arcade\/effect\.png",\d+,this\.([\w\$]+)\);/, 'class', PlayerRenderer));
     linkerHelper.proxyProp(PlayerRenderer, 'instance', linkerHelper.findValue(/switch\(this\.([\w\$]+)\.[\w\$]+\.direction\)/, 'method', PlayerRenderer));
@@ -73,6 +74,9 @@ class GameLogicHooks extends EventEmitter {
     const end = Date.now();
     console.log('[GSM] Game hooks class by function took', end - start, 'ms');
 
+    addCleanupFn(detour(GameEngine.prototype, 'render', function () {
+      if (!initialized) this.skipTutorial();
+    }));
     addCleanupFn(detour(BoardRenderer.prototype, 'render', function (...args: any) {
       boardRenderStarted = true;
       lastBoardRenderCtx = this;

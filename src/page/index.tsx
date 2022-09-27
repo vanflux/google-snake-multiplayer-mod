@@ -8,6 +8,7 @@ import { linkerHelper } from './utils/linker';
 import { multiplayer } from './multiplayer';
 import { cleanup } from './utils/cleanup';
 import { snakeLoop } from './utils/snake-loop';
+import { menuContainerUIHook } from './game-hooks/menu-container-ui-hook';
 
 export async function pageLoadedEntry() {
   if (window.cleanup) window.cleanup();
@@ -20,7 +21,8 @@ export async function pageLoadedEntry() {
       linkerHelper.setup();
       gameLogicHooks.on('initialize', () => {
         headerUIHook.setup(<ExtraHeader></ExtraHeader>);
-        canvasUIHook.setup(<CanvasOverlay></CanvasOverlay>)
+        canvasUIHook.setup(<CanvasOverlay></CanvasOverlay>);
+        menuContainerUIHook.setup([<div>abc123123</div>, <div>xczmxcmzxcmzxmcxzmcmxz</div>]);
         multiplayer.setup();
         snakeLoop.setup();
       });

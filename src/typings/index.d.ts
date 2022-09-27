@@ -23,6 +23,7 @@ declare interface Window {
 // Game classes
 declare class GameEngine {
   public render(a: number, b: number);
+  public skipTutorial();
 }
 
 declare class GameInstance {
