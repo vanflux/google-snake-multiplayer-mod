@@ -12,9 +12,13 @@ class MenuContainerUIHook extends EventEmitter {
     return menus.reduce((lastCleanup, menu) => {
       const container = document.createElement('div');
       container.style.position = 'absolute';
-      container.style.top = '50%';
-      container.style.transform = 'translateY(-50%)';
       container.style.zIndex = '10000';
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
+      container.style.alignItems = 'center';
+      container.style.justifyContent = 'center';
+      container.style.width = '100%';
+      container.style.height = '100%';
       menuContainer.parentElement?.insertBefore(container, menuContainer);
       const root = createRoot(container);
       root.render(menu);
@@ -26,6 +30,7 @@ class MenuContainerUIHook extends EventEmitter {
     const id = setInterval(() => {
       const menuContainer = this.tryFindMenuContainerElement();
       if (!menuContainer) return;
+      menuContainer.style.display = 'none';
       console.log('[GSM] Menu container found!');
       clearInterval(id);
   

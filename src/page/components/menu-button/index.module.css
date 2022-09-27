@@ -1,0 +1,13 @@
+
+.container {
+  background: #15c;
+  height: 64px;
+  border-radius: 8px;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  text-align: center;
+  -webkit-user-select: none;
+  cursor: pointer;
+  display: inline-block;
+}
