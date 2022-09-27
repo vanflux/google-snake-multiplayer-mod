@@ -6,9 +6,6 @@ import { detour, findChildKeysInObject } from "../game-hooks/utils";
 import { addCleanupFn } from "../utils/cleanup";
 import { connection } from "./connection";
 
-const MAX_LATENCY_COMPENSATION = 1000;
-const LATENCY_COMPENSATION_AMPLIFIER = 1.1;
-
 class GameSharing extends EventEmitter {
   private oldObjs: Collectable[] = [];
   private lastDataSend = 0; // Last data send date
@@ -112,7 +109,7 @@ class GameSharing extends EventEmitter {
 
   getThisSnakeData() {
     return {
-      xaa: gameInstance.xaa,
+      xaaDelta: Date.now() - gameInstance.xaa,
       saa: gameInstance.saa,
       headState: gameInstance.headState,
       lastInvencibilityTime: gameInstance.lastInvencibilityTime,
@@ -179,7 +176,8 @@ export class GameSharingOther {
   updateData(data: GameInstance) {
     const oldColor1 = this.instance?.snakeBodyConfig?.color1;
 
-    this.instance.xaa = data.xaa;
+    this.instance.xaaDelta = data.xaaDelta;
+    this.instance.xaa = Date.now();
     this.instance.saa = data.saa;
     this.instance.headState = data.headState;
     this.instance.lastInvencibilityTime = data.lastInvencibilityTime;
@@ -205,7 +203,7 @@ export class GameSharingOther {
   };
 
   updateLatency(newLatency: number) {
-    this.instance.latency = Math.min(MAX_LATENCY_COMPENSATION, ((gameInstance.latency / 2) + (newLatency / 2)) * LATENCY_COMPENSATION_AMPLIFIER);
+    this.instance.latency = (gameInstance.latency / 2) + (newLatency / 2);
   };
 
   getLatency() {
@@ -213,13 +211,13 @@ export class GameSharingOther {
   }
   
   render(resolution: any) {
-    const renderPart = ((Date.now() - this.instance.latency) - this.instance.xaa) / this.instance.saa
+    const renderPart = ((Date.now() + this.instance.xaaDelta) - this.instance.xaa) / this.instance.saa
     this.instance.receivedData && this.renderer.render(renderPart, true, resolution);
-  };
+  }
 
   update() {
-    this.instance.receivedData && this.instance.update((Date.now() - this.instance.latency));
-  };
+    this.instance.receivedData && this.instance.update(Date.now() + this.instance.xaaDelta);
+  }
 }
 
 export const gameSharing = new GameSharing();

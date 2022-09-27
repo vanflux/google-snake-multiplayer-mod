@@ -27,6 +27,7 @@ declare class GameEngine {
 }
 
 declare class GameInstance {
+  public xaaDelta: number;
   public xaa: number; // TODO: better naming
   public saa: number; // TODO: better naming
   public headState: number; // TODO: check
