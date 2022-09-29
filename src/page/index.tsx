@@ -9,7 +9,7 @@ import { multiplayer } from './multiplayer';
 import { cleanup } from './utils/cleanup';
 import { snakeLoop } from './utils/snake-loop';
 import { menuContainerUIHook } from './game-hooks/menu-container-ui-hook';
-import { VersionManagerMenu } from './components/version-manager-menu';
+import { VersionManagerMenu } from './menus/version-manager-menu';
 import { MenuButton } from './components/menu-button';
 
 export async function pageLoadedEntry() {
