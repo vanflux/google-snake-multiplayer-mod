@@ -10,6 +10,7 @@ import { cleanup } from './utils/cleanup';
 import { snakeLoop } from './utils/snake-loop';
 import { menuContainerUIHook } from './game-hooks/menu-container-ui-hook';
 import { VersionManagerMenu } from './components/version-manager-menu';
+import { MenuButton } from './components/menu-button';
 
 export async function pageLoadedEntry() {
   if (window.cleanup) window.cleanup();
@@ -25,7 +26,9 @@ export async function pageLoadedEntry() {
         canvasUIHook.setup(<CanvasOverlay></CanvasOverlay>);
         menuContainerUIHook.setup([
           <VersionManagerMenu />,
-        ]);
+        ], (
+        <MenuButton onClick={() => menuContainerUIHook.setMenu(0)}>GSM</MenuButton>
+        ));
         multiplayer.setup();
         snakeLoop.setup();
       });

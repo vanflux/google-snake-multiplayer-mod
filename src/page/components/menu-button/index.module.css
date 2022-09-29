@@ -6,7 +6,9 @@
   border: none;
   color: #fff;
   font-size: 20px;
+  flex: 1;
   text-align: center;
+  user-select: none;
   -webkit-user-select: none;
   cursor: pointer;
   display: inline-block;
