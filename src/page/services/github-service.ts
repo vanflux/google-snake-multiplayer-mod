@@ -23,7 +23,7 @@ export interface ReleaseItem {
 }
 
 class GithubService {
-  async fetchReleases() {
+  async fetchReleases(): Promise<ReleaseItem[]> {
     return fetch('https://api.github.com/repos/vanflux/google-snake-multiplayer-mod/releases').then(x => x.json());
   }
 }
