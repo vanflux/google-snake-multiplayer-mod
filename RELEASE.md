@@ -1,7 +1,7 @@
 Version $VERSION released! 🥳
 
 Changes:
-- Version manager added!
+- Fixed some timing problems.
 
 Features:
 - Version manager! Now you can test new features by switching to release candidates!
