@@ -27,8 +27,8 @@ jobs:
       - name: Prepare mod artifact
         run: mv build/prod/chrome/raw/page.js gsm-mod.js
       - name: Upload mod artifacts
-          uses: actions/upload-artifact@v3
-          with:
-            name: pr-artifact
-            path: gsm-mod.js
-            retention-days: 5
+        uses: actions/upload-artifact@v3
+        with:
+          name: pr-artifact
+          path: gsm-mod.js
+          retention-days: 5
