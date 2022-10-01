@@ -21,6 +21,10 @@ export function VersionManagerMenu() {
     document.body.appendChild(script);
   }, [tag]);
 
+  const refresh = () => {
+    queryClient.invalidateQueries(['releases']);
+  };
+
   const back = () => menuContainerUIHook.setMenu(-1);
 
   return (
@@ -30,6 +34,7 @@ export function VersionManagerMenu() {
         <VersionSelect tag={tag} onChange={setTag}></VersionSelect>
         <MenuRow>
           <MenuButton disabled={switching} onClick={switchVersion}>Switch</MenuButton>
+          <MenuButton disabled={switching} onClick={refresh}>Refresh</MenuButton>
           <MenuButton disabled={switching} onClick={back}>Back</MenuButton>
         </MenuRow>
       </div>
