@@ -1,0 +1,34 @@
+name: Build PR artifacts
+on:
+  pull_request:
+    types:
+      - opened
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install dependencies
+        run: npm i
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+      - name: Build
+        run: npm run build
+        env:
+          VERSION: ${{ steps.extract_branch.outputs.branch }}
+          DEFAULT_SERVER_URL: wss://ws-gsm.vanflux.dev
+      - name: Prepare mod artifact
+        run: mv build/prod/chrome/raw/page.js gsm-mod.js
+      - name: Upload mod artifacts
+          uses: actions/upload-artifact@v3
+          with:
+            name: pr-artifact
+            path: gsm-mod.js
+            retention-days: 5
