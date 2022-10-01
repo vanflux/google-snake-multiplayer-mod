@@ -12,8 +12,13 @@ export interface MenuSelectProps<T> {
   items?: MenuSelectItem<T>[]
 }
 
-export function MenuSelect<T>({onChange, items}: MenuSelectProps<T>) {
-  return <select onChange={e => onChange?.(items?.[parseInt(e.target.value)]?.data)} className={styles.container}>
+export function MenuSelect<T>({onChange, value, items}: MenuSelectProps<T>) {
+  return <select
+    value={items?.findIndex(item => item.data === value)}
+    onChange={e => onChange?.(items?.[parseInt(e.target.value)]?.data)}
+    className={styles.container}
+  >
+    {value === undefined && <option label="Select some version"></option>}
     {items?.map((item, i) => <option key={i} value={i}>{item.name}</option>)}
   </select>
 }

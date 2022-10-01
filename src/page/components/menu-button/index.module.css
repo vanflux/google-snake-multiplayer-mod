@@ -13,3 +13,7 @@
   cursor: pointer;
   display: inline-block;
 }
+
+.disabled {
+  background: #888;
+}
