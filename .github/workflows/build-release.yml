@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - 'release/**'
+      - 'rc/**'
 jobs:
   build-release:
     runs-on: ubuntu-latest
@@ -30,10 +31,21 @@ jobs:
         env:
           VERSION: ${{ steps.vars.outputs.version }}
       - name: Create Release
+        if: contains(github.ref, "release")
         uses: ncipollo/release-action@v1
         with:
           artifacts: "gsm-bookmark.html,gsm-mod.js"
           tag: v${{ steps.vars.outputs.version }}
           name: Release ${{ steps.vars.outputs.version }}
+          bodyFile: RELEASE_final.md
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release Candidate
+        if: contains(github.ref, "rc")
+        uses: ncipollo/release-action@v1
+        with:
+          prerelease: true
+          artifacts: "gsm-bookmark.html,gsm-mod.js"
+          tag: v${{ steps.vars.outputs.version }}
+          name: Release Candidate ${{ steps.vars.outputs.version }}
           bodyFile: RELEASE_final.md
           token: ${{ secrets.GITHUB_TOKEN }}
