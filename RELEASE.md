@@ -1,9 +1,11 @@
 Version $VERSION released! 🥳
 
 Changes:
-- Public game server added! For now, stability isnt guarantee!
+- Version manager added!
 
 Features:
+- Version manager! Now you can test new features by switching to release candidates!
+- Public game server added! For now, stability isnt guarantee!
 - Multiplayer support!
 - Shared snakes!
 - Shared foods!
