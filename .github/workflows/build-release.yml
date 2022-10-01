@@ -31,7 +31,7 @@ jobs:
         env:
           VERSION: ${{ steps.vars.outputs.version }}
       - name: Create Release
-        if: contains(github.ref, "release")
+        if: contains(github.ref, 'release')
         uses: ncipollo/release-action@v1
         with:
           artifacts: "gsm-bookmark.html,gsm-mod.js"
@@ -40,7 +40,7 @@ jobs:
           bodyFile: RELEASE_final.md
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Create Release Candidate
-        if: contains(github.ref, "rc")
+        if: contains(github.ref, 'rc')
         uses: ncipollo/release-action@v1
         with:
           prerelease: true
