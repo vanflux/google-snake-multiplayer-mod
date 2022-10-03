@@ -17,8 +17,11 @@ export function CanvasOverlay() {
   }, []);
 
   return <div className={styles.container}>
-    {list.map((item, i) => (
-      <div key={i}>{item}</div>
-    ))}
+    <div className={styles.playerList}>
+      {list.map((item, i) => (
+        <div key={i}>{item}</div>
+      ))}
+    </div>
+    <div className={styles.centeredText}>Waiting for players...</div>
   </div>
 }
