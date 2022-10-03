@@ -1,13 +1,14 @@
 // Responsability: Share game instance with other players and sync other player instances
 
 import EventEmitter from "events";
+import { CollectablesDataDto } from "../../common/dtos/collectables-data-dto";
+import { SnakeDataDto } from "../../common/dtos/snake-data-dto";
 import { gameInstance, lastBoardRenderCtx } from "../game-hooks/game-logic-hook";
 import { detour, findChildKeysInObject } from "../game-hooks/utils";
 import { addCleanupFn } from "../utils/cleanup";
 import { connection } from "./connection";
 
 class GameSharing extends EventEmitter {
-  private oldObjs: Collectable[] = [];
   private lastDataSend = 0; // Last data send date
   private lastDirection!: string;
 
@@ -87,9 +88,9 @@ class GameSharing extends EventEmitter {
     }));
   }
   
-  private updateCollectables(data: Collectable[]) {
-    gameInstance.mapObjectHolder.objs.length = data.length;
-    data.forEach((x, i) => {
+  private updateCollectables(data: CollectablesDataDto) {
+    gameInstance.mapObjectHolder.objs.length = data.collectables.length;
+    data.collectables.forEach((x, i) => {
       if (!gameInstance.mapObjectHolder.objs[i]) gameInstance.mapObjectHolder.objs[i] = {} as Collectable;
       const proxied = createCollectableProxy(gameInstance.mapObjectHolder.objs[i]);
       proxied.position = new Vector2(x.position.x, x.position.y);
@@ -103,11 +104,11 @@ class GameSharing extends EventEmitter {
     });
   }
   
-  createOther() {
+  private createOther() {
     return new GameSharingOther(this);
   }
 
-  getThisSnakeData() {
+  private getThisSnakeData(): SnakeDataDto {
     return {
       xaaDelta: Date.now() - gameInstance.xaa,
       saa: gameInstance.saa,
@@ -126,23 +127,25 @@ class GameSharing extends EventEmitter {
     };
   };
 
-  getThisCollectablesData() {
-    return gameInstance?.mapObjectHolder?.objs?.map((x: any) => {
-      const proxiedObj = createCollectableProxy(x);
-      return {
-        position: { x: proxiedObj.position.x, y: proxiedObj.position.y },
-        animationStep: proxiedObj.animationStep,
-        type: proxiedObj.type,
-        appearing: proxiedObj.appearing,
-        velocity: { x: proxiedObj.velocity.x, y: proxiedObj.velocity.y },
-        f6: { x: proxiedObj.f6.x, y: proxiedObj.f6.y },
-        isPoisoned: proxiedObj.isPoisoned,
-        isGhost: proxiedObj.isGhost,
-      } as Collectable;
-    });
+  private getThisCollectablesData(): CollectablesDataDto {
+    return {
+      collectables: gameInstance?.mapObjectHolder?.objs?.map((x: any) => {
+        const proxiedObj = createCollectableProxy(x);
+        return {
+          position: { x: proxiedObj.position.x, y: proxiedObj.position.y },
+          animationStep: proxiedObj.animationStep,
+          type: proxiedObj.type,
+          appearing: proxiedObj.appearing,
+          velocity: { x: proxiedObj.velocity.x, y: proxiedObj.velocity.y },
+          f6: { x: proxiedObj.f6.x, y: proxiedObj.f6.y },
+          isPoisoned: proxiedObj.isPoisoned,
+          isGhost: proxiedObj.isGhost,
+        } as Collectable;
+      }),
+    };
   }
 
-  updateLatency(newLatency: number) {
+  private updateLatency(newLatency: number) {
     gameInstance.latency = newLatency;
   }
 
@@ -173,7 +176,7 @@ export class GameSharingOther {
     console.log('[GSM] Other instance:', this.instance);
   }
   
-  updateData(data: GameInstance) {
+  updateData(data: SnakeDataDto) {
     const oldColor1 = this.instance?.snakeBodyConfig?.color1;
 
     this.instance.xaaDelta = data.xaaDelta;
@@ -181,7 +184,6 @@ export class GameSharingOther {
     this.instance.saa = data.saa;
     this.instance.headState = data.headState;
     this.instance.lastInvencibilityTime = data.lastInvencibilityTime;
-    this.instance.snakeBodyConfig.headState = data.snakeBodyConfig.headState;
     this.instance.snakeBodyConfig.bodyPoses.length = data.snakeBodyConfig.bodyPoses.length;
     data.snakeBodyConfig.bodyPoses.forEach((x, i) => this.instance.snakeBodyConfig.bodyPoses[i] = new Vector2(x.x, x.y));
     this.instance.snakeBodyConfig.tailPos = new Vector2(data.snakeBodyConfig.tailPos.x, data.snakeBodyConfig.tailPos.y);

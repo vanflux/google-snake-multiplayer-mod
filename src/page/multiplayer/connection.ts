@@ -37,6 +37,9 @@ export class Connection extends EventEmitter {
       secure: false,
       transports: ['websocket'],
     });
+    this.socket.on('connect', () => {
+      this.socket?.emit('version', { version: VERSION });
+    });
     this.forwardEvent('connect');
     this.forwardEvent('disconnect');
     this.forwardEvent('latency');

@@ -30,7 +30,7 @@ declare class GameInstance {
   public xaaDelta: number;
   public xaa: number; // TODO: better naming
   public saa: number; // TODO: better naming
-  public headState: number; // TODO: check
+  public headState: boolean;
   public snakeBodyConfig: SnakeBodyConfig;
   public gameClass1: GameClass1;
   public mapObjectHolder: MapObjectHolder;
@@ -82,7 +82,6 @@ declare class MapObjectHolder {
 }
 
 declare class SnakeBodyConfig {
-  public headState: number; // TODO: check
   public bodyPoses: Vector2[];
   public tailPos: Vector2;
   public direction: string;
