@@ -1,3 +1,4 @@
+import { RoomState } from "../../common/enums/room-state";
 import { Room } from "../room";
 
 class RoomsService {
@@ -5,7 +6,7 @@ class RoomsService {
   public rooms: Room[] = [];
 
   getRandomRoom() {
-    const existentRoom = this.rooms.find(room => room.players.size < room.capacity);
+    const existentRoom = this.rooms.find(room => room.state == RoomState.WAITING_PLAYERS && room.players.size < room.capacity);
     if (existentRoom) return existentRoom;
     const id = `random-${this.nextId++}`;
     console.log(`Creating new room ${id}`);

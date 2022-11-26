@@ -24,6 +24,7 @@ declare interface Window {
 declare class GameEngine {
   public render(a: number, b: number);
   public skipTutorial();
+  public reset(isModControlled?: boolean);
 }
 
 declare class GameInstance {
@@ -34,7 +35,9 @@ declare class GameInstance {
   public snakeBodyConfig: SnakeBodyConfig;
   public gameClass1: GameClass1;
   public mapObjectHolder: MapObjectHolder;
-  public lastInvencibilityTime: number; // Mod variable
+  public ready: boolean; // Mod variable
+  public invencible: boolean; // Mod variable
+  public invencibleStartTime: number; // Mod variable
   public latency: number; // Mod variable
   public receivedData: boolean; // Mod variable
   constructor(settings: Settings, menu: Menu, header: Header);
@@ -42,7 +45,7 @@ declare class GameInstance {
   public tick();
   public checkDeathCollision(pos: Vector2);
   public die();
-  public reset();
+  public reset(isModControlled?: boolean);
   public collectAndSpawnNextCollectable(a?: any, b?: any, c?: any);
 }
 

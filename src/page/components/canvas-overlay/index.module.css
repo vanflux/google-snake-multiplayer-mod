@@ -7,6 +7,10 @@
   height: 100%;
 }
 
+.roomName {
+  align-self: center;
+}
+
 .playerList {
   position: absolute;
   left: 32px;

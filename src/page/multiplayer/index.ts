@@ -1,7 +1,7 @@
 import EventEmitter from "events";
+import { roomsManager } from "./rooms-manager";
 import { snakeCollision } from "./snake-collision";
 import { gameSharing } from "./game-sharing";
-import { roomsManager } from "./rooms-manager";
 
 class Multiplayer extends EventEmitter {
   setup() {

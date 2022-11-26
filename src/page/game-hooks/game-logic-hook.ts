@@ -7,10 +7,10 @@ import { detour, findChildKeyInObject } from "./utils";
 // This entire file is bizarre, it makes all necessary hooks to the game
 
 export let gameInstance: GameInstance;
+export let gameEngine: GameEngine;
 export let lastBoardRenderCtx: BoardRenderer;
 
 let initialized = false;
-let boardRenderStarted = false;
 
 class GameLogicHooks extends EventEmitter {
   setup() {
@@ -62,8 +62,8 @@ class GameLogicHooks extends EventEmitter {
     linkerHelper.proxyProp(SnakeBodyConfig, 'color1', linkerHelper.findValue(/this\.([\w\$]+)=[\w\$]+\[0\]\[0\]/, 'class', SnakeBodyConfig));
     linkerHelper.proxyProp(SnakeBodyConfig, 'color2', linkerHelper.findValue(/this\.([\w\$]+)=[\w\$]+\[0\]\[1\]/, 'class', SnakeBodyConfig));
     linkerHelper.proxyProp(GameInstance, 'headState', linkerHelper.findValue(/\(this.([\w\$]+)\|\|this\.[\w\$]+\)/, 'method', GameInstance));
-    linkerHelper.proxyProp(GameInstance, 'xaa', linkerHelper.findValue(/this\.([\w\$]+)>=this\.[\w\$]+;\)this\.[\w\$]+\+=this.[\w\$]+/, 'method', GameInstance));
-    linkerHelper.proxyProp(GameInstance, 'saa', linkerHelper.findValue(/this\.[\w\$]+>=this\.([\w\$]+);\)this\.[\w\$]+\+=this.[\w\$]+/, 'method', GameInstance));
+    linkerHelper.proxyProp(GameInstance, 'xaa', linkerHelper.findValue(/this\.([\w\$]+)[\n\s]*>=[\n\s]*this\.[\w\$]+;\)this\.[\w\$]+\+=this.[\w\$]+/, 'method', GameInstance));
+    linkerHelper.proxyProp(GameInstance, 'saa', linkerHelper.findValue(/this\.[\w\$]+[\n\s]*>=[\n\s]*this\.([\w\$]+);\)this\.[\w\$]+\+=this.[\w\$]+/, 'method', GameInstance));
     linkerHelper.proxyProp(GameInstance, 'gameClass1', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(GameClass1.name)}\\(`), 'class', GameInstance));
     linkerHelper.proxyProp(GameInstance, 'snakeBodyConfig', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(SnakeBodyConfig.name)}\\(`), 'class', GameInstance));
     linkerHelper.proxyProp(GameInstance, 'mapObjectHolder', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)=new ${escapeRegex(MapObjectHolder.name)}\\(`), 'class', GameInstance));
@@ -75,10 +75,12 @@ class GameLogicHooks extends EventEmitter {
     console.log('[GSM] Game hooks class by function took', end - start, 'ms');
 
     addCleanupFn(detour(GameEngine.prototype, 'render', function () {
-      if (!initialized) this.skipTutorial();
+      if (!initialized) {
+        gameEngine = this;
+        this.skipTutorial();
+      }
     }));
     addCleanupFn(detour(BoardRenderer.prototype, 'render', function (...args: any) {
-      boardRenderStarted = true;
       lastBoardRenderCtx = this;
 
       if (!initialized) {

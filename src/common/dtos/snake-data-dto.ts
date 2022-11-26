@@ -5,7 +5,6 @@ export const snakeDataDtoSchema = z.object({
   xaaDelta: z.number().int(),
   saa: z.number().int(),
   headState: z.boolean(),
-  lastInvencibilityTime: z.number().int(),
   snakeBodyConfig: z.object({
     bodyPoses: z.array(vector2DtoSchema),
     tailPos: vector2DtoSchema,
