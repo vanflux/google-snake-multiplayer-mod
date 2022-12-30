@@ -1,3 +1,10 @@
+import { LinkerDifferValueCountFoundException } from "../../common/exceptions/linker-differ-value-count-found.exception";
+import { LinkerMultipleFunctionFoundException } from "../../common/exceptions/linker-multiple-function-found.exception";
+import { LinkerMultipleMethodFoundException } from "../../common/exceptions/linker-multiple-method-found.exception";
+import { LinkerMultipleValueFoundException } from "../../common/exceptions/linker-multiple-value-found.exception";
+import { LinkerNoFunctionFoundException } from "../../common/exceptions/linker-no-function-found.exception";
+import { LinkerNoMethodFoundException } from "../../common/exceptions/linker-no-method-found.exception";
+import { LinkerNoValueFoundException } from "../../common/exceptions/linker-no-value-found.exception";
 
 class LinkerBase {
   constructor(
@@ -58,8 +65,8 @@ class LinkerHelper {
     containList: RegExp[],
   ) {
     const methods = this.objs.filter(x => x.type === 'method' && x.name.match(rawName) && paramCount.includes(x.jsObj.length) && containList.every(y => x.code.match(y)));
-    if (methods.length === 0) throw new Error('No methods were found!');
-    if (methods.length > 1) throw new Error('More than 1 method was found!');
+    if (methods.length === 0) throw new LinkerNoMethodFoundException({ rawName, paramCount, containList });
+    if (methods.length > 1) throw new LinkerMultipleMethodFoundException({ rawName, paramCount, containList });
     return methods[0].parentJsObj;
   }
 
@@ -70,8 +77,8 @@ class LinkerHelper {
     containList: RegExp[],
   ) {
     const methods = this.objs.filter(x => x.parentJsObj === classJsObj && x.type === 'method' && x.name.match(rawName) && paramCount.includes(x.jsObj.length) && containList.every(y => x.code.match(y)));
-    if (methods.length === 0) throw new Error('No methods were found!');
-    if (methods.length > 1) throw new Error('More than 1 method was found!');
+    if (methods.length === 0) throw new LinkerNoMethodFoundException({ classJsObjName: classJsObj?.name, rawName, paramCount, containList });
+    if (methods.length > 1) throw new LinkerMultipleMethodFoundException({ classJsObjName: classJsObj?.name, rawName, paramCount, containList });
     return methods[0].name;
   }
 
@@ -82,16 +89,16 @@ class LinkerHelper {
   ) {
     if (!Array.isArray(paramCount)) paramCount = [paramCount];
     const functions = this.objs.filter(x => x.type === 'function' && x.name.match(rawName) && paramCount.includes(x.jsObj.length) && containList.every(y => x.code.match(y)));
-    if (functions.length === 0) throw new Error('No functions were found!');
-    if (functions.length > 1) throw new Error('More than 1 function was found!');
+    if (functions.length === 0) throw new LinkerNoFunctionFoundException({ rawName, paramCount, containList });
+    if (functions.length > 1) throw new LinkerMultipleFunctionFoundException({ rawName, paramCount, containList });
     return functions[0].jsObj;
   }
 
   public findValues(regex: RegExp, expected: number, type?: LinkerBase['type'], parent?: any) {
     const matches = this.objs.map(obj => (type === undefined || obj.type === type) && (parent === undefined || obj.parentJsObj === parent) && obj.code.match(regex)).filter(Boolean) as string[][];
-    if (matches.length === 0) throw new Error('No values were found!');
-    if (matches.length > 1) throw new Error('More than 1 value was found!');
-    if (matches[0].length !== expected + 1) throw new Error('The found values count differs from the expected!');
+    if (matches.length === 0) throw new LinkerNoValueFoundException({ regex, expected, type, parentName: parent?.name });
+    if (matches.length > 1) throw new LinkerMultipleValueFoundException({ regex, expected, type, parentName: parent?.name });
+    if (matches[0].length !== expected + 1) throw new LinkerDifferValueCountFoundException({ regex, expected, type, parentName: parent?.name });
     return matches[0]!.slice(1);
   }
   

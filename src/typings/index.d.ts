@@ -20,21 +20,29 @@ declare interface Window {
   AssetRenderer: typeof AssetRenderer;
 }
 
+// Regex patch
+declare interface RegExp {
+  toJSON(): string;
+}
+
 // Game classes
 declare class GameEngine {
   public render(a: number, b: number);
   public skipTutorial();
+  public reset(isModControlled?: boolean);
 }
 
 declare class GameInstance {
   public xaaDelta: number;
   public xaa: number; // TODO: better naming
   public saa: number; // TODO: better naming
-  public headState: number; // TODO: check
+  public headState: boolean;
   public snakeBodyConfig: SnakeBodyConfig;
   public gameClass1: GameClass1;
   public mapObjectHolder: MapObjectHolder;
-  public lastInvencibilityTime: number; // Mod variable
+  public ready: boolean; // Mod variable
+  public invencible: boolean; // Mod variable
+  public invencibleStartTime: number; // Mod variable
   public latency: number; // Mod variable
   public receivedData: boolean; // Mod variable
   constructor(settings: Settings, menu: Menu, header: Header);
@@ -42,7 +50,7 @@ declare class GameInstance {
   public tick();
   public checkDeathCollision(pos: Vector2);
   public die();
-  public reset();
+  public reset(isModControlled?: boolean);
   public collectAndSpawnNextCollectable(a?: any, b?: any, c?: any);
 }
 
@@ -82,7 +90,6 @@ declare class MapObjectHolder {
 }
 
 declare class SnakeBodyConfig {
-  public headState: number; // TODO: check
   public bodyPoses: Vector2[];
   public tailPos: Vector2;
   public direction: string;
@@ -111,6 +118,7 @@ interface Collectable {
   public f6: Vector2;
   public isPoisoned: boolean;
   public isGhost: boolean;
+  public light: number;
 }
 
 // Game functions

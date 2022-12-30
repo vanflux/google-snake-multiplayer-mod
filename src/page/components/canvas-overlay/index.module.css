@@ -2,6 +2,46 @@
 .container {
   display: flex;
   flex-direction: column;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.topInfos {
+  display: flex;
+  align-self: center;
+  margin-top: 1px;
+}
+
+.newRoomBtn {
+  background-color: rgb(64, 170, 73);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  height: 22px;
+}
+
+.newRoomBtn:hover {
+  filter: brightness(110%);
+}
+
+.roomName {
+  color: lightgrey;
+  margin-left: 16px;
+}
+
+.playerList {
+  position: absolute;
+  left: 32px;
+  top: 32px;
   color: rgb(132, 0, 255);
-  margin: 32px;
+}
+
+.centeredText {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  color: rgb(255, 255, 255);
 }

@@ -37,14 +37,25 @@ export class Connection extends EventEmitter {
       secure: false,
       transports: ['websocket'],
     });
+    this.socket.on('connect', () => {
+      this.socket?.emit('version', { version: VERSION });
+    });
     this.forwardEvent('connect');
     this.forwardEvent('disconnect');
     this.forwardEvent('latency');
-    this.forwardEvent('other_connect');
-    this.forwardEvent('other_disconnect');
-    this.forwardEvent('other_snake_data');
-    this.forwardEvent('other_collectables_data');
-    this.forwardEvent('other_latency');
+    this.forwardEvent('invencible');
+    this.forwardEvent('other:connect');
+    this.forwardEvent('other:disconnect');
+    this.forwardEvent('other:ready');
+    this.forwardEvent('other:invencible');
+    this.forwardEvent('other:snake:data');
+    this.forwardEvent('other:collectables:data');
+    this.forwardEvent('other:latency');
+    this.forwardEvent('room:state');
+    this.forwardEvent('room:counter');
+    this.forwardEvent('room:reset-player');
+    this.forwardEvent('room:join');
+    this.forwardEvent('room:leave');
     this.forwardEvent('connect_error');
   }
 

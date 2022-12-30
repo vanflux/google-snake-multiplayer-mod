@@ -1,13 +1,13 @@
 // Responsability: Share game instance with other players and sync other player instances
 
 import EventEmitter from "events";
+import { CollectablesDataDto } from "../../common/dtos/collectables-data-dto";
+import { SnakeDataDto } from "../../common/dtos/snake-data-dto";
 import { gameInstance, lastBoardRenderCtx } from "../game-hooks/game-logic-hook";
 import { detour, findChildKeysInObject } from "../game-hooks/utils";
 import { addCleanupFn } from "../utils/cleanup";
-import { connection } from "./connection";
 
 class GameSharing extends EventEmitter {
-  private oldObjs: Collectable[] = [];
   private lastDataSend = 0; // Last data send date
   private lastDirection!: string;
 
@@ -18,44 +18,6 @@ class GameSharing extends EventEmitter {
     
     gameInstance.latency = 50;
     
-    // Setup communication
-    connection.on('connect', () => {
-      console.log('[GSM] Connected to the server!');
-      this.others.clear();
-      this.emit('others_changed', this.others);
-    });
-    connection.on('other_connect', ({id}) => {
-      console.log('[GSM] Other connect', id);
-      const other = gameSharing.createOther();
-      this.others.set(id, other);
-      this.emit('others_changed', this.others);
-    });
-    connection.on('other_disconnect', ({id}) => {
-      console.log('[GSM] Other disconnect', id);
-      this.others.delete(id);
-      this.emit('others_changed', this.others);
-    });
-    connection.on('other_snake_data', ({id, data}) => {
-      const other = this.others.get(id);
-      if (!other) return;
-      other.updateData(data);
-    });
-    connection.on('other_collectables_data', ({id, data}) => {
-      const other = this.others.get(id);
-      if (!other) return;
-      this.updateCollectables(data);
-    });
-    connection.on('latency', ({latency}) => {
-      gameSharing.updateLatency(latency);
-      this.emit('latency_changed', latency);
-    });
-    connection.on('other_latency', ({id, latency}) => {
-      const other = this.others.get(id);
-      if (!other) return;
-      other.updateLatency(latency);
-      this.emit('others_changed', this.others);
-    });
-    
     addCleanupFn(detour(BoardRenderer.prototype, 'render', function () {
       // Send player data to others
       const curDirection = gameInstance.snakeBodyConfig.direction;
@@ -63,7 +25,7 @@ class GameSharing extends EventEmitter {
         self.lastDataSend = Date.now();
         self.lastDirection = curDirection;
         const serializedData = gameSharing.getThisSnakeData();
-        connection.send('snake_data', serializedData);
+        self.emit('snake:data', serializedData);
       }
     }));
 
@@ -82,14 +44,58 @@ class GameSharing extends EventEmitter {
     }, function (a: any, b: any, c: any) {
       if (this === gameInstance) {
         const serializedData = gameSharing.getThisCollectablesData();
-        connection.send('collectables_data', serializedData);
+        self.emit('collectables:data', serializedData);
       }
     }));
   }
+
+  getLatency() {
+    return gameInstance.latency;
+  }
+
+  clear() {
+    this.others.clear();
+    this.emit('others:changed', this.others);
+  }
+
+  addOther(id: string) {
+    const other = new GameSharingOther(this);
+    this.others.set(id, other);
+    this.emit('others:changed', this.others);
+  }
+
+  deleteOther(id: string) {
+    this.others.delete(id);
+    this.emit('others:changed', this.others);
+  }
+
+  updateOtherReady(id: string, ready: boolean) {
+    const other = this.others.get(id);
+    other?.updateReady(ready);
+    this.emit('others:changed', this.others);
+  }
+
+  updateOtherInvencible(id: string, invencible: boolean) {
+    const other = this.others.get(id);
+    other?.updateInvencible(invencible);
+    this.emit('others:changed', this.others);
+  }
+
+  updateOtherSnake(id: string, data: SnakeDataDto) {
+    const other = this.others.get(id);
+    other?.updateData(data);
+  }
   
-  private updateCollectables(data: Collectable[]) {
-    gameInstance.mapObjectHolder.objs.length = data.length;
-    data.forEach((x, i) => {
+  updateOtherLatency(id: string, latency: number) {
+    const other = this.others.get(id);
+    if (!other) return;
+    other.updateLatency(latency);
+    this.emit('others:changed', this.others);
+  }
+
+  updateCollectables(data: CollectablesDataDto) {
+    gameInstance.mapObjectHolder.objs.length = data.collectables.length;
+    data.collectables.forEach((x, i) => {
       if (!gameInstance.mapObjectHolder.objs[i]) gameInstance.mapObjectHolder.objs[i] = {} as Collectable;
       const proxied = createCollectableProxy(gameInstance.mapObjectHolder.objs[i]);
       proxied.position = new Vector2(x.position.x, x.position.y);
@@ -100,19 +106,25 @@ class GameSharing extends EventEmitter {
       proxied.f6 = new Vector2(x.f6.x, x.f6.y);
       proxied.isPoisoned = x.isPoisoned;
       proxied.isGhost = x.isGhost;
+      proxied.light = x.light;
     });
   }
-  
-  createOther() {
-    return new GameSharingOther(this);
+
+  updateLatency(latency: number) {
+    gameInstance.latency = latency;
+    this.emit('latency:changed', latency);
   }
 
-  getThisSnakeData() {
+  updateInvencible(invencible: boolean) {
+    gameInstance.invencible = invencible;
+    this.emit('invencible:changed', invencible);
+  }
+
+  private getThisSnakeData(): SnakeDataDto {
     return {
       xaaDelta: Date.now() - gameInstance.xaa,
       saa: gameInstance.saa,
       headState: gameInstance.headState,
-      lastInvencibilityTime: gameInstance.lastInvencibilityTime,
       snakeBodyConfig: {
         bodyPoses: gameInstance.snakeBodyConfig.bodyPoses.map((x: any) => ({ x: x.x, y: x.y })),
         tailPos: ({ x: gameInstance.snakeBodyConfig.tailPos.x, y: gameInstance.snakeBodyConfig.tailPos.y }),
@@ -126,28 +138,23 @@ class GameSharing extends EventEmitter {
     };
   };
 
-  getThisCollectablesData() {
-    return gameInstance?.mapObjectHolder?.objs?.map((x: any) => {
-      const proxiedObj = createCollectableProxy(x);
-      return {
-        position: { x: proxiedObj.position.x, y: proxiedObj.position.y },
-        animationStep: proxiedObj.animationStep,
-        type: proxiedObj.type,
-        appearing: proxiedObj.appearing,
-        velocity: { x: proxiedObj.velocity.x, y: proxiedObj.velocity.y },
-        f6: { x: proxiedObj.f6.x, y: proxiedObj.f6.y },
-        isPoisoned: proxiedObj.isPoisoned,
-        isGhost: proxiedObj.isGhost,
-      } as Collectable;
-    });
-  }
-
-  updateLatency(newLatency: number) {
-    gameInstance.latency = newLatency;
-  }
-
-  getLatency() {
-    return gameInstance.latency;
+  private getThisCollectablesData(): CollectablesDataDto {
+    return {
+      collectables: gameInstance?.mapObjectHolder?.objs?.map((x: any) => {
+        const proxiedObj = createCollectableProxy(x);
+        return {
+          position: { x: proxiedObj.position.x, y: proxiedObj.position.y },
+          animationStep: proxiedObj.animationStep,
+          type: proxiedObj.type,
+          appearing: proxiedObj.appearing,
+          velocity: { x: proxiedObj.velocity.x, y: proxiedObj.velocity.y },
+          f6: { x: proxiedObj.f6.x, y: proxiedObj.f6.y },
+          isPoisoned: proxiedObj.isPoisoned,
+          isGhost: proxiedObj.isGhost,
+          light: proxiedObj.light,
+        } as Collectable;
+      }),
+    };
   }
 }
 
@@ -164,7 +171,7 @@ export class GameSharingOther {
     this.instance = Object.assign(new GameInstance(settings, menu, header), {
       receivedData: false,
       latency: 50,
-      lastInvencibilityTime: Date.now(),
+      invencible: true,
 
       gameClass1: gameInstance.gameClass1, // A important class for rendering snake
       mapObjectHolder: gameInstance.mapObjectHolder, // By default, the map objects are shared between gameInstance and others
@@ -172,16 +179,23 @@ export class GameSharingOther {
     this.renderer = new PlayerRenderer(this.instance, settings, lastBoardRenderCtx.canvasCtx);
     console.log('[GSM] Other instance:', this.instance);
   }
+
+  updateReady(ready: boolean) {
+    this.instance.ready = ready;
+  }
+
+  updateInvencible(invencible: boolean) {
+    if ((!this.instance.invencibleStartTime || !this.instance.invencible) && invencible) this.instance.invencibleStartTime = Date.now();
+    this.instance.invencible = invencible;
+  }
   
-  updateData(data: GameInstance) {
+  updateData(data: SnakeDataDto) {
     const oldColor1 = this.instance?.snakeBodyConfig?.color1;
 
     this.instance.xaaDelta = data.xaaDelta;
     this.instance.xaa = Date.now();
     this.instance.saa = data.saa;
     this.instance.headState = data.headState;
-    this.instance.lastInvencibilityTime = data.lastInvencibilityTime;
-    this.instance.snakeBodyConfig.headState = data.snakeBodyConfig.headState;
     this.instance.snakeBodyConfig.bodyPoses.length = data.snakeBodyConfig.bodyPoses.length;
     data.snakeBodyConfig.bodyPoses.forEach((x, i) => this.instance.snakeBodyConfig.bodyPoses[i] = new Vector2(x.x, x.y));
     this.instance.snakeBodyConfig.tailPos = new Vector2(data.snakeBodyConfig.tailPos.x, data.snakeBodyConfig.tailPos.y);
@@ -203,7 +217,7 @@ export class GameSharingOther {
   };
 
   updateLatency(newLatency: number) {
-    this.instance.latency = (gameInstance.latency / 2) + (newLatency / 2);
+    this.instance.latency = newLatency;
   };
 
   getLatency() {

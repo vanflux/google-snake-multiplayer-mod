@@ -11,6 +11,10 @@ class CanvasUIHook extends EventEmitter {
   private renderCanvasOverlay(canvas: HTMLElement, canvasOverlay: ReactNode) {
     const container = document.createElement('div');
     container.style.position = 'absolute';
+    container.style.left = '0px';
+    container.style.right = '0px';
+    container.style.bottom = '0px';
+    container.style.top = '70px';
     canvas.parentElement?.insertBefore(container, canvas);
     const root = createRoot(container);
     root.render(canvasOverlay);
