@@ -40,8 +40,9 @@ export class Player extends EventEmitter {
     });
     
     socket.on('room:join:random', () => {
-      this.room?.removePlayer(this);
+      const oldRoom = this.room;
       this.room = roomsService.getRandomRoom();
+      oldRoom?.removePlayer(this);
       this.room.addPlayer(this);
     });
     

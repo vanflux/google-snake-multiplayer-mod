@@ -37,7 +37,7 @@ export class Room extends EventEmitter {
     const onCollectablesData = (data: CollectablesDataDto) => {
       const result = collectablesDataDtoSchema.safeParse(data);
       if (!result.success) {
-        console.error('snakeDataDto validate failed, data:', data);
+        console.error('collectablesData validate failed, data:', data);
         return player.disconnect();
       }
       this.players.forEach(p => p !== player && p.sendOtherCollectablesData(player.id, result.data));

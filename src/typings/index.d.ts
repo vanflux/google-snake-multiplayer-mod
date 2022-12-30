@@ -20,6 +20,11 @@ declare interface Window {
   AssetRenderer: typeof AssetRenderer;
 }
 
+// Regex patch
+declare interface RegExp {
+  toJSON(): string;
+}
+
 // Game classes
 declare class GameEngine {
   public render(a: number, b: number);
@@ -113,6 +118,7 @@ interface Collectable {
   public f6: Vector2;
   public isPoisoned: boolean;
   public isGhost: boolean;
+  public light: number;
 }
 
 // Game functions

@@ -11,6 +11,7 @@ export const collectablesDataDtoSchema = z.object({
     f6: vector2DtoSchema,
     isPoisoned: z.boolean(),
     isGhost: z.boolean(),
+    light: z.number(),
   })),
 });
 

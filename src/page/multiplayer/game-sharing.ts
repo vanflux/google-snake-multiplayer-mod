@@ -106,6 +106,7 @@ class GameSharing extends EventEmitter {
       proxied.f6 = new Vector2(x.f6.x, x.f6.y);
       proxied.isPoisoned = x.isPoisoned;
       proxied.isGhost = x.isGhost;
+      proxied.light = x.light;
     });
   }
 
@@ -150,6 +151,7 @@ class GameSharing extends EventEmitter {
           f6: { x: proxiedObj.f6.x, y: proxiedObj.f6.y },
           isPoisoned: proxiedObj.isPoisoned,
           isGhost: proxiedObj.isGhost,
+          light: proxiedObj.light,
         } as Collectable;
       }),
     };

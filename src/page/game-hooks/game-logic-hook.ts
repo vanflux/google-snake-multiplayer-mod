@@ -18,8 +18,8 @@ class GameLogicHooks extends EventEmitter {
     const start = Date.now();
 
     // Collectable proxy
-    const [collPosition, collAnimationStep, collType, collAppearing, collVelocity, collF6, collIsPoisoned, collIsGhost] =
-      linkerHelper.findValues(/\{([\w\$]+):new [\w\$]+\(Math\.floor\(3.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*\}/, 8, 'function');
+    const [collPosition, collAnimationStep, collType, collAppearing, collVelocity, collF6, collIsPoisoned, collIsGhost, collLight] =
+      linkerHelper.findValues(/\{([\w\$]+):new [\w\$]+\(Math\.floor\(3.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*,[\s\r\n\t]*([\w\$]+):.*\}/, 9, 'function');
     window.createCollectableProxy = linkerHelper.createProxyFactory({
       maps: {
         position: { rawName: collPosition },
@@ -30,6 +30,7 @@ class GameLogicHooks extends EventEmitter {
         f6: { rawName: collF6 },
         isPoisoned: { rawName: collIsPoisoned },
         isGhost: { rawName: collIsGhost },
+        light: { rawName: collLight },
       },
     });
 
@@ -40,7 +41,7 @@ class GameLogicHooks extends EventEmitter {
     window.Vector2 = linkerHelper.findClassByMethod('clone', [0], [/\(this\.x,this\.y\)/]);
     window.PlayerRenderer = linkerHelper.findClassByMethod('render', [3], [/RIGHT/, /DOWN/]);
     window.BoardRenderer = linkerHelper.findClassByMethod('render', [2], [/this\.context\.fillRect\(0,0,this\.context\.canvas\.width,this\.context\.canvas\.height\);/]);
-    window.Settings = linkerHelper.findClassByMethod('toString', [0], [/v=10,color=/]);
+    window.Settings = linkerHelper.findClassByMethod('toString', [0], [/v=\w+,color=/]);
     window.Menu = linkerHelper.findClassByMethod('update', [0], [/this\.isVisible\(\)/, /settings/]);
     window.Header = linkerHelper.findClassByMethod(/.*/, [1], [/images\/icons\/material/]);
     window.MapObjectHolder = linkerHelper.findClassByMethod('shuffle', [1], []);
@@ -50,7 +51,7 @@ class GameLogicHooks extends EventEmitter {
     window.GameInstance = linkerHelper.findClassByMethod('tick', [0], []);
 
     linkerHelper.proxyProp(GameEngine, 'skipTutorial', linkerHelper.findMethodName(GameEngine, /.*/, [0], [/"visibility","hidden"/, /200/]));
-    linkerHelper.proxyProp(BoardRenderer, 'canvasCtx', linkerHelper.findValue(new RegExp(`new ${escapeRegex(PlayerRenderer.name)}\\(this\\.[\\w\\$]+,this.settings,this.([\\w\\$]+)\\)`), 'class'));
+    linkerHelper.proxyProp(BoardRenderer, 'canvasCtx', linkerHelper.findValue(new RegExp(`new ${escapeRegex(PlayerRenderer.name)}\\(this\\.[\\w\\$]+,this.settings,this.([\\w\\$]+)`), 'class'));
     linkerHelper.proxyProp(PlayerRenderer, 'canvasCtx', linkerHelper.findValue(/new [\w\$]+\("snake_arcade\/effect\.png",\d+,this\.([\w\$]+)\);/, 'class', PlayerRenderer));
     linkerHelper.proxyProp(PlayerRenderer, 'instance', linkerHelper.findValue(/switch\(this\.([\w\$]+)\.[\w\$]+\.direction\)/, 'method', PlayerRenderer));
     linkerHelper.proxyProp(MapObjectHolder, 'objs', linkerHelper.findValue(/this\.([\w\$]+)\.length-1/, 'method', MapObjectHolder));

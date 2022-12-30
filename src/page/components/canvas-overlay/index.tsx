@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { RoomState } from '../../../common/enums/room-state';
 import { connection } from '../../multiplayer/connection';
 import { gameSharing } from '../../multiplayer/game-sharing';
+import { roomsManager } from '../../multiplayer/rooms-manager';
 import styles from './index.module.css';
 
 export function CanvasOverlay() {
@@ -16,6 +17,10 @@ export function CanvasOverlay() {
     setList([myItem, ...othersList]);
   }, []);
 
+  const newRoomClick = () => {
+    roomsManager.joinRandom();
+  };
+
   useEffect(() => {
     gameSharing.on('latency:changed', update);
     gameSharing.on('others:changed', update);
@@ -27,7 +32,10 @@ export function CanvasOverlay() {
   }, []);
 
   return <div className={styles.container}>
-    <div className={styles.roomName}>{id !== undefined && `Room ${id}`}</div>
+    <div className={styles.topInfos}>
+      <button onClick={newRoomClick} className={styles.newRoomBtn}>Find New Room</button>
+      <div className={styles.roomName}>{id !== undefined && `Room ${id}`}</div>
+    </div>
     <div className={styles.playerList}>
       {list.map((item, i) => (
         <div key={i}>{item}</div>

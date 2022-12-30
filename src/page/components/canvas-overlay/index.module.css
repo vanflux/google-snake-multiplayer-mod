@@ -7,8 +7,27 @@
   height: 100%;
 }
 
-.roomName {
+.topInfos {
+  display: flex;
   align-self: center;
+  margin-top: 1px;
+}
+
+.newRoomBtn {
+  background-color: rgb(64, 170, 73);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  height: 22px;
+}
+
+.newRoomBtn:hover {
+  filter: brightness(110%);
+}
+
+.roomName {
+  color: lightgrey;
+  margin-left: 16px;
 }
 
 .playerList {

@@ -11,6 +11,7 @@ import { snakeLoop } from './utils/snake-loop';
 import { menuContainerUIHook } from './game-hooks/menu-container-ui-hook';
 import { VersionManagerMenu } from './menus/version-manager-menu';
 import { MenuButton } from './components/menu-button';
+import { patchRegexToJson } from '../common/utils/patch-regex-to-json';
 
 export async function pageLoadedEntry() {
   if (window.cleanup) window.cleanup();
@@ -20,6 +21,7 @@ export async function pageLoadedEntry() {
     try {
       console.log('[GSM] Starting...');
 
+      patchRegexToJson();
       linkerHelper.setup();
       gameLogicHooks.on('initialize', () => {
         headerUIHook.setup(<ExtraHeader></ExtraHeader>);
