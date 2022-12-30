@@ -1,10 +1,23 @@
-# GSM Mod (Google Snake Multiplayer Mod)
+<h1 align="center">
+  GSM Mod<br>
+  <i>Google Snake Multiplayer Mod</i>
+</h1>
 
-A mod that makes google snake game multiplayer!
+<p align="center">
+  A mod that makes google snake game multiplayer!
+</p>
 
-This project uses [vf-ext](https://github.com/vanflux/vf-ext) to create browser extensions(only development). If you want to create extensions like this, take a look.
+<p align="center">
+  <img src="https://img.shields.io/github/v/release/vanflux/google-snake-multiplayer-mod" />
+  <img src="https://img.shields.io/github/actions/workflow/status/vanflux/google-snake-multiplayer-mod/build-release.yml" />
+</p>
 
-## Usage, Play the game
+<p align="center">
+  <b>AD time</b>: This project uses <a href="https://github.com/vanflux/vf-ext">vf-ext</a> to create browser extensions.<br>
+  If you want to create extensions like this, take a look.
+</p>
+
+# Usage, Play the game
 
 - Download the `gsm-bookmark.html` file from the [latest release](https://github.com/vanflux/google-snake-multiplayer-mod/releases/latest)
 - Open `chrome://bookmarks/` on google chrome (sorry, firefox is not supported now)
@@ -13,11 +26,11 @@ This project uses [vf-ext](https://github.com/vanflux/vf-ext) to create browser 
 - At the top on the right, click on the three-dots icon > Bookmarks > GSM Mod
 - Enjoy
 
-## Demo
+# Demo
 
 ![Demo gif](docs/gifs/demo.gif)
 
-## Host my own server
+# Host my own server
 
 - Install Node 16
 - Clone repository: `git clone git@github.com:vanflux/google-snake-multiplayer-mod.git`
@@ -25,7 +38,7 @@ This project uses [vf-ext](https://github.com/vanflux/vf-ext) to create browser 
 - Install dependencies: `npm i`
 - Run server: `npm run server`
 
-## Development
+# Development
 
 - Install Node 16
 - Clone repository
@@ -34,7 +47,7 @@ This project uses [vf-ext](https://github.com/vanflux/vf-ext) to create browser 
 - Load the extension located on `build/dev` on your browser
 - Run server with `npm run server`
 
-## Network
+# Network
 
 The networking has been optimized since v0.1.2, we are not serializing the entire game instance, we are sending only the needed data, thanks to the linker by making the class field names more friendly.
 
@@ -42,7 +55,7 @@ The networking has been optimized since v0.1.2, we are not serializing the entir
   - Each player uploads 200 B/packet * 5 packets/s = 1kB/s
   - Total download and upload(SEPARATELY) = (200 * 5 * 2 * 60 * 60) / 1000000 = 7.2 MB/hour
 
-## Errors
+# Errors
 
 I can't connect to my own server(IP address is not 127.0.0.1 or localhost):
 
