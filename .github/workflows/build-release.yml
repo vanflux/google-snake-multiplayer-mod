@@ -35,7 +35,6 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "gsm-bookmark.html,gsm-mod.js"
-          tag: v${{ steps.tagName.outputs.tag }}
           name: Release ${{ steps.tagName.outputs.tag }}
           bodyFile: RELEASE_final.md
           token: ${{ secrets.GITHUB_TOKEN }}
