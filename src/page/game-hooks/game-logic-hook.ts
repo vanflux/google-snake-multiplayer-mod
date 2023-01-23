@@ -34,7 +34,7 @@ class GameLogicHooks extends EventEmitter {
       },
     });
 
-    window.changeAssetColor = linkerHelper.findFunction(/.*/, [3, 4], [/\.getImageData\(0,0/]);
+    window.changeAssetColor = linkerHelper.findFunction(/.*/, [3, 4, 5], [/\.getImageData[\n\s]*\([\n\s]*0[\n\s]*,[\n\s]*0/]);
     window.spawnCollectableAt = linkerHelper.findFunction(/.*/, [3], [/[\w\$]+\.[\w\$]+\[b\]\.[\w\$]+=[\w\$]+;[\n\s]*[\w\$]+\.[\w\$]+\[b\]\.[\w\$]+=[\w\$]+;[\n\s]*[\w\$]+\.[\w\$]+\[b\]\.[\w\$]+.*[\n\s]*.*[\w\$]+\(\)/]);
 
     window.GameEngine = linkerHelper.findClassByMethod('render', [2], [/"visible":"hidden"/, /\.render\(a,b\)/]);
@@ -47,12 +47,12 @@ class GameLogicHooks extends EventEmitter {
     window.MapObjectHolder = linkerHelper.findClassByMethod('shuffle', [1], []);
     window.SnakeBodyConfig = linkerHelper.findClassByMethod('reset', [0], [/"RIGHT"/, /this\.direction/, /\.push\(new/]);
     window.GameClass1 = linkerHelper.findClassByMethod('reset', [0], [/\.push\(\[\]\)/, new RegExp(`new ${escapeRegex(Vector2.name)}\\(0,0\\)`)]);
-    window.AssetRenderer = linkerHelper.findClassByMethod('render', [5], [/this\.context\.drawImage/, /this\.context\.translate/, /this\.context\.rotate/]);
+    window.AssetRenderer = linkerHelper.findClassByMethod('render', [5, 6], [/this\.context\.drawImage/, /this\.context\.translate/, /this\.context\.rotate/]);
     window.GameInstance = linkerHelper.findClassByMethod('tick', [0], []);
 
     linkerHelper.proxyProp(GameEngine, 'skipTutorial', linkerHelper.findMethodName(GameEngine, /.*/, [0], [/"visibility","hidden"/, /200/]));
     linkerHelper.proxyProp(BoardRenderer, 'canvasCtx', linkerHelper.findValue(new RegExp(`new ${escapeRegex(PlayerRenderer.name)}\\(this\\.[\\w\\$]+,this.settings,this.([\\w\\$]+)`), 'class'));
-    linkerHelper.proxyProp(PlayerRenderer, 'canvasCtx', linkerHelper.findValue(/new [\w\$]+\("snake_arcade\/effect\.png",\d+,this\.([\w\$]+)\);/, 'class', PlayerRenderer));
+    linkerHelper.proxyProp(PlayerRenderer, 'canvasCtx', linkerHelper.findValue(/new [\w\$]+\([\n\s]*this.settings[\n\s]*,[\n\s]*"snake_arcade\/effect\.png"[\n\s]*,[\n\s]*\d+,this\.([\w\$]+)[^\)]*\);/, 'class', PlayerRenderer));
     linkerHelper.proxyProp(PlayerRenderer, 'instance', linkerHelper.findValue(/switch\(this\.([\w\$]+)\.[\w\$]+\.direction\)/, 'method', PlayerRenderer));
     linkerHelper.proxyProp(MapObjectHolder, 'objs', linkerHelper.findValue(/this\.([\w\$]+)\.length-1/, 'method', MapObjectHolder));
     linkerHelper.proxyProp(SnakeBodyConfig, 'bodyPoses', linkerHelper.findValue(new RegExp(`this\\.([\\w\\$]+)\\.push\\(new ${escapeRegex(Vector2.name)}\\(Math\\.floor\\(`), 'method', SnakeBodyConfig));
