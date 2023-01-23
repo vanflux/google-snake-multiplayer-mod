@@ -1,9 +1,8 @@
 name: Build and Release Action
 on:
   push:
-    branches:
-      - 'release/**'
-      - 'rc/**'
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 jobs:
   build-release:
     runs-on: ubuntu-latest
@@ -16,36 +15,27 @@ jobs:
           node-version: 16
       - name: Install dependencies
         run: npm i
-      - name: Get version number
-        id: vars
-        run: echo ::set-output name=version::${GITHUB_REF_NAME##*/}
+      - uses: olegtarasov/get-tag@v2.1.2
+        id: tagName
+        with:
+          tagRegex: "v(.*)"
       - name: Build
         run: npm run build
         env:
-          VERSION: ${{ steps.vars.outputs.version }}
+          VERSION: ${{ steps.tagName.outputs.tag }}
           DEFAULT_SERVER_URL: wss://ws-gsm.vanflux.dev
       - name: Prepare mod artifact
         run: mv build/prod/chrome/raw/page.js gsm-mod.js
       - name: Build RELEASE_final.md
         run: envsubst < RELEASE.md > RELEASE_final.md
         env:
-          VERSION: ${{ steps.vars.outputs.version }}
+          VERSION: ${{ steps.tagName.outputs.tag }}
       - name: Create Release
         if: contains(github.ref, 'release')
         uses: ncipollo/release-action@v1
         with:
           artifacts: "gsm-bookmark.html,gsm-mod.js"
-          tag: v${{ steps.vars.outputs.version }}
-          name: Release ${{ steps.vars.outputs.version }}
-          bodyFile: RELEASE_final.md
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create Release Candidate
-        if: contains(github.ref, 'rc')
-        uses: ncipollo/release-action@v1
-        with:
-          prerelease: true
-          artifacts: "gsm-bookmark.html,gsm-mod.js"
-          tag: v${{ steps.vars.outputs.version }}
-          name: Release Candidate ${{ steps.vars.outputs.version }}
+          tag: v${{ steps.tagName.outputs.tag }}
+          name: Release ${{ steps.tagName.outputs.tag }}
           bodyFile: RELEASE_final.md
           token: ${{ secrets.GITHUB_TOKEN }}
