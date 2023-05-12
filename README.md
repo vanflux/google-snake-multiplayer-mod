@@ -1,5 +1,5 @@
 <h1 align="center">
-  GSM Mod<br>
+  GSM Mod (no longer working 2023)<br>
   <i>Google Snake Multiplayer Mod</i>
 </h1>
 
